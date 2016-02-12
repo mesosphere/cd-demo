@@ -1,0 +1,34 @@
+{
+  "id": "cd-demo-app",
+  "container": {
+    "type": "DOCKER",
+    "docker": {
+      "image": "mesosphere/cd-demo-app:local-machine-test",
+      "network": "BRIDGE",
+      "portMappings": [
+        {
+          "hostPort": 80,
+          "containerPort": 80,
+          "protocol": "tcp",
+          "servicePort": 2001
+        }
+      ]
+    }
+  },
+  "acceptedResourceRoles": [
+    "slave_public"
+  ],
+  "instances": 1,
+  "cpus": 0.1,
+  "mem": 128,
+  "healthChecks": [
+    {
+      "protocol": "TCP",
+      "gracePeriodSeconds": 600,
+      "intervalSeconds": 30,
+      "portIndex": 0,
+      "timeoutSeconds": 10,
+      "maxConsecutiveFailures": 2
+    }
+  ]
+}
