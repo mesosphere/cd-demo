@@ -3,14 +3,13 @@
   "container": {
     "type": "DOCKER",
     "docker": {
-      "image": "mesosphere/cd-demo-app:local-machine-test",
+      "image": "mesosphere/cd-demo-app:latest",
       "network": "BRIDGE",
       "portMappings": [
         {
           "hostPort": 80,
           "containerPort": 80,
-          "protocol": "tcp",
-          "servicePort": 2001
+          "protocol": "tcp"
         }
       ]
     }
