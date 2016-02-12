@@ -32,5 +32,8 @@
       "timeoutSeconds": 10,
       "maxConsecutiveFailures": 2
     }
-  ]
+  ],
+  "upgradeStrategy": {
+        "minimumHealthCapacity": 0,
+  }
 }
