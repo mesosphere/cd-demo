@@ -34,6 +34,6 @@
     }
   ],
   "upgradeStrategy": {
-        "minimumHealthCapacity": 0,
+        "minimumHealthCapacity": 0
   }
 }
