@@ -17,6 +17,9 @@
   "acceptedResourceRoles": [
     "slave_public"
   ],
+  "labels": {
+    "lastChangedBy": "sunil@mesosphere.io"
+  },
   "instances": 1,
   "cpus": 0.1,
   "mem": 128,
