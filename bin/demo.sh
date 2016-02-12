@@ -1,5 +1,5 @@
 #!/bin/bash
-set -ex
+set -e
 
 function usage {
     cat <<END
@@ -11,7 +11,8 @@ The create-many command will create 50 "freestyle" Jenkins jobs. Each of these j
 will appear as a separate Jenkins build, and will randomly pass or fail. The
 duration of each job will be between 120 and 240 seconds.
 
-The create-cd command will create a build pipeline.
+The create-cd command will create a build pipeline that will deploy a Docker
+container to the DCOS Marathon.
 
 This script will demonstrate how the Mesos plugin can automatically create and
 destroy Jenkins build slaves as demand increases or decreases, as well as create
@@ -59,17 +60,18 @@ function create_view {
 function update_dcos_cli {
     local dcos_url=$1
     dcos config set core.dcos_url ${dcos_url}
-    dcos config unset package.sources
-    dcos config prepend package.sources 'https://github.com/mesosphere/universe/archive/configurable-slave-container.zip'
-    dcos package update
 }
 
 function install_jenkins {
+    dcos config unset package.sources
+    dcos config prepend package.sources 'https://github.com/mesosphere/universe/archive/configurable-slave-container.zip'
+    dcos package update
     # TODO: rename stuff
     #mkdir -p tmp/conf
     #cat conf/jenkins.json | jq '.jenkins."framework-name" = "jenkins-$(jenkins_name)"' > tmp/jenkins-$(jenkins_name).json
     dcos package install --yes --options=conf/jenkins.json jenkins
     echo "Info: Jenkins has been installed! Wait for it to come up before proceeding."
+    read -p "Press [Enter] to continue, or ^C to cancel..."
 }
 
 function verify_jenkins {
@@ -108,7 +110,7 @@ END
         result=$((RANDOM % 2))
         demo_job_name="${job_basename}-${i}"
 
-        curl -fH 'Content-Type: application/xml' --data-binary @demo-job.xml \
+        curl -fH 'Content-Type: application/xml' --data-binary @jobs/demo-job.xml \
             "${jenkins_url}/createItem?name=${demo_job_name}"
 
         if [[ $? == 0 ]]; then
@@ -147,8 +149,6 @@ function create_cd_jobs {
 
 
 function main {
-    local demo_job_name="demo-job"
-    local demo_job_count=50
 
     if ! command -v curl > /dev/null; then
         echo "Error: cURL not found in $PATH"
@@ -163,21 +163,22 @@ function main {
     fi
 
     update_dcos_cli $dcos_url
-    install_jenkins
-
-    read -p "Press [Enter] to continue, or ^C to cancel..."
 
     local jenkins_url=$dcos_url/service/jenkins-demo
-    verify_jenkins $jenkins_url
+    local demo_job_name="demo-job"
+    local demo_job_count=50
 
     case $operation in
         create-many)
+            verify_jenkins $jenkins_url
             create $jenkins_url $demo_job_name $demo_job_count
             ;;
         cleanup-many)
             cleanup $jenkins_url $demo_job_name $demo_job_count
             ;;
         create-cd)
+            install_jenkins
+            verify_jenkins $jenkins_url
             create_cd_jobs $jenkins_url $dcos_url
             ;;
         *)
