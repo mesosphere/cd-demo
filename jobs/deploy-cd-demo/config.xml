@@ -34,12 +34,10 @@
   <builders>
     <hudson.tasks.Shell>
       <command>GIT_EMAIL=$(git --no-pager show -s --format=&apos;%ae&apos; $GIT_COMMIT)
-cat marathon.json | jq &quot;.container.docker.image = \&quot;mesosphere/cd-demo-app:${GIT_COMMIT}\&quot; | .id = \&quot;cd-demo-app-${JOB_NAME}\&quot; | .labels.lastChangedBy
-= \&quot;${GIT_EMAIL}\&quot; &quot; &gt; marathon-rendered.json</command>
+cat marathon.json | jq &quot;.container.docker.image = \&quot;mesosphere/cd-demo-app:${GIT_COMMIT}\&quot; | .id = \&quot;cd-demo-app-${JOB_NAME}\&quot; | .labels.lastChangedBy = \&quot;${GIT_EMAIL}\&quot; &quot; &gt; marathon-rendered.json</command>
     </hudson.tasks.Shell>
     <hudson.tasks.Shell>
-      <command>curl -X PUT http://sunil-h1f-elasticl-1sz9ryaph8sqp-870102724.us-west-2.elb.amazonaws.com/marathon/v2/apps/cd-demo-app-${JOB_NAME} -d @marathon-rendered.json -H
-&quot;Content-type: application/json&quot;</command>
+      <command>curl -X PUT DCOS_URL/marathon/v2/apps/cd-demo-app-${JOB_NAME} -d @marathon-rendered.json -H &quot;Content-type: application/json&quot;</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers/>

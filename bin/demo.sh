@@ -136,8 +136,11 @@ function cleanup {
 
 function create_cd_jobs {
     local jenkins_url=$1
+    local dcos_url=$2
     create_job ${jenkins_url} "jobs/build-cd-demo/config.xml" build-cd-demo
-    create_job ${jenkins_url} "jobs/deploy-cd-demo/config.xml" deploy-cd-demo
+    mkdir -p tmp/deploy-cd-demo
+    cat jobs/deploy-cd-demo/config.xml | sed "s#DCOS_URL#$dcos_url#g" > tmp/deploy-cd-demo/config.xml
+    create_job ${jenkins_url} "tmp/deploy-cd-demo/config.xml" deploy-cd-demo
     create_view ${jenkins_url} "views/cd-demo-pipeline.xml" cd-demo-pipeline
     trigger_build ${jenkins_url} build-cd-demo
 }
@@ -175,7 +178,7 @@ function main {
             cleanup $jenkins_url $demo_job_name $demo_job_count
             ;;
         create-cd)
-            create_cd_jobs $jenkins_url
+            create_cd_jobs $jenkins_url $dcos_url
             ;;
         *)
             echo -e "Unknown operation: ${operation}\n"
