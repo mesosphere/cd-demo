@@ -1,1 +1,0 @@
-Hello demo user! I'm showing off a CI/CD pipeline which built the container image I'm running, pushed it to DockerHub and then deployed it to Marathon. Feel free to click around and edit things here.
