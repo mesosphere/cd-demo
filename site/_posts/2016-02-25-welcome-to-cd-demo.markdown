@@ -1,7 +1,6 @@
 ---
 layout: post
 title:  "Welcome to the Continuous Delivery demonstration!"
-date:   2016-02-25 19:05:14 -0800
 categories: demo
 ---
 
