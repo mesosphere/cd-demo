@@ -4,11 +4,16 @@ A continuous delivery demo using Jenkins on DCOS.
 This demo is a Python script that performs the following sequence of actions when run with the `install` command:
 
 1. Installs Jenkins if it isn't already available.
-2. Sets up a series of build jobs, the necessary credentials and a [Build Pipeline](https://wiki.jenkins-ci.org/display/JENKINS/Build+Pipeline+Plugin) view to demonstrate a basic continuous delivery pipeline. These jobs:
-    + Build a Docker container based off the [Jekyll Docker image](https://hub.docker.com/r/jekyll/jekyll/) that includes the content stored in [/site](/site).
+2. Sets up a series of build jobs, the necessary credentials and a [Build Pipeline](https://wiki.jenkins-ci.org/display/JENKINS/Build+Pipeline+Plugin) view to demonstrate a basic continuous delivery pipeline. Jenkins will:
+    + Spin up a new Jenkins slave using the Mesos plugin. This slave runs inside a Docker container on one of our DCOS agents.
+    + Clone the git repository
+    + Build a Docker container based off the [Jekyll Docker image](https://hub.docker.com/r/jekyll/jekyll/) that includes the content stored in [/site](/site) and push it to DockerHub.
     + Run the newly created container and a [Linkchecker container](https://github.com/mesosphere/docker-containers/blob/master/utils/linkchecker/Dockerfile) that runs a basic integration test against the container, checking that the webserver comes up correctly and that all links being served are valid (i.e. no 404s).
-    + Deploys the newly created container to the DCOS base Marathon instance.
+    + Manually trigger a Marathon deployment of the newly created container to the DCOS base Marathon instance. If the application already exists, Marathon will simply upgrade it.
+    + Make the application available on a public slave at port 80.
 3. Creates 50 build jobs that take a random amount of time between 1 and 2 minutes. These jobs will randomly fail.
+    + The Mesos plugin will spin up build slaves on demand for these jobs, using as much capacity as your cluster has available.
+    + When these jobs are finished, the Jenkins tasks will terminate and the resources will be relinquished back to other users of your cluster.
 
 When run with the `uninstall` command, it will:
 
