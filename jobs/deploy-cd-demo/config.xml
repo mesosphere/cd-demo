@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='UTF-8'?>
+<?xml version="1.0" encoding="UTF-8"?>
 <project>
   <actions/>
   <description>Deploy our demo project</description>
@@ -18,7 +18,7 @@
     </userRemoteConfigs>
     <branches>
       <hudson.plugins.git.BranchSpec>
-        <name>*/demo</name>
+        <name>*/GIT_BRANCH</name>
       </hudson.plugins.git.BranchSpec>
     </branches>
     <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
@@ -33,11 +33,11 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>GIT_EMAIL=$(git --no-pager show -s --format=&apos;%ae&apos; $GIT_COMMIT)
-cat marathon.json | jq &quot;.container.docker.image = \&quot;mesosphere/cd-demo-app:${GIT_COMMIT}\&quot; | .id = \&quot;cd-demo-app-${JOB_NAME}\&quot; | .labels.lastChangedBy = \&quot;${GIT_EMAIL}\&quot; &quot; &gt; marathon-rendered.json</command>
+      <command>GIT_EMAIL=$(git --no-pager show -s --format='%ae' $GIT_COMMIT)
+cat marathon.json | jq ".container.docker.image = \"mesosphere/cd-demo-app:${GIT_COMMIT}\" | .id = \"JENKINS_NAME-deployed-app\" | .labels.lastChangedBy = \"${GIT_EMAIL}\" " &gt; marathon-rendered.json</command>
     </hudson.tasks.Shell>
     <hudson.tasks.Shell>
-      <command>curl -X PUT DCOS_URL/marathon/v2/apps/cd-demo-app-${JOB_NAME} -d @marathon-rendered.json -H &quot;Content-type: application/json&quot;</command>
+      <command>curl -X PUT DCOS_URL/marathon/v2/apps/JENKINS_NAME-deployed-app -d @marathon-rendered.json -H "Content-type: application/json"</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers/>

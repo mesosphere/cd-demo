@@ -1,6 +1,5 @@
 {
   "jenkins": {
-    "framework-name": "jenkins-demo",
-    "slave-image": "mesosphere/jenkins-dind-cd-demo:0.2.0"
+    "framework-name": "jenkins-demo"
   }
 }
