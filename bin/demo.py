@@ -6,7 +6,7 @@ Usage:
     demo.py uninstall [--name=<name>] [--builds=<n>] <dcos_url>
 
 Options:
-    --name=<name>          Jenkins instance name to use [default: jenkins-demo].
+    --name=<name>          Jenkins instance name to use [default: jenkins].
     --no-pipeline          Don't run continuous delivery demo.
     --branch=<branch>      Git branch for continuous delivery demo [default: demo].
     --org=<org>            Docker Hub organisation where repo lives [default: mesosphere].
