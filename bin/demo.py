@@ -63,13 +63,12 @@ def install(dcos_url, jenkins_name, jenkins_url):
     shutil.copyfile("conf/jenkins.json", "tmp/jenkins.json")
     rename("tmp/jenkins.json", jenkins_name)
     command = "dcos package install --yes --options=tmp/jenkins.json jenkins"
-    print (command)
+    print ("\n> " + command)
     if call (['dcos', 'package', 'install', '--yes', '--options=tmp/jenkins.json', 'jenkins']) != 0:
         log ("Failed to install Jenkins")
         exit(1)
-    print("[demo] Jenkins has been installed! Wait for it to come up before proceeding at: {}".format(jenkins_url))
+    print("\n[demo] Jenkins has been installed! Wait for it to come up before proceeding at: {}".format(jenkins_url))
     raw_input("[demo] Press [Enter] to continue, or ^C to cancel...")
-    os.system('clear')
 
 def verify(jenkins_url):
     r = requests.get(jenkins_url)
@@ -148,7 +147,6 @@ def demo_pipeline(jenkins_url, dcos_url, name, branch, org, username, password):
     trigger_build(jenkins_url, "build-cd-demo")
     log ("Created demo pipeline")
     raw_input("[demo] Press [Enter] to continue, or ^C to cancel...")
-    os.system('clear')
 
 def demo_dynamic_slaves(jenkins_url, builds):
     log ("Creating {} freestyle Jenkins jobs".format(builds))
@@ -165,7 +163,6 @@ def demo_dynamic_slaves(jenkins_url, builds):
             log ("Job {} created successfully. Duration: {}. Result: {}. Triggering build.".format(job_name, duration, result))
     log ("Created {} freestyle Jenkins jobs".format(builds))
     raw_input("[demo] Press [Enter] to continue, or ^C to cancel...")
-    os.system('clear')
 
 def cleanup_pipeline_jobs (jenkins_url):
     log ("Cleaning up demo pipeline")
@@ -204,7 +201,6 @@ if __name__ == "__main__":
     dcos_url = arguments['<dcos_url>']
     jenkins_url = '{}service/{}/'.format(dcos_url, jenkins_name)
 
-    os.system('clear')
     config_dcos_cli(dcos_url)
 
     try:
