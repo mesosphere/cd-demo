@@ -196,7 +196,7 @@ def uninstall(dcos_url, jenkins_name):
 if __name__ == "__main__":
     arguments = docopt(__doc__, version="CD Demo 0.1")
 
-    jenkins_name = arguments['--name']
+    jenkins_name = arguments['--name'].lower()
     builds = int(arguments['--builds'])
     dcos_url = arguments['<dcos_url>']
     jenkins_url = '{}service/{}/'.format(dcos_url, jenkins_name)
