@@ -56,14 +56,20 @@ exit $exit_status</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
-    <au.com.centrumsystems.hudson.plugin.buildpipeline.trigger.BuildPipelineTrigger plugin="build-pipeline-plugin@1.5.1">
+    <hudson.plugins.parameterizedtrigger.BuildTrigger plugin="parameterized-trigger@2.30">
       <configs>
-        <hudson.plugins.git.GitRevisionBuildParameters plugin="git@2.4.1">
-          <combineQueuedCommits>false</combineQueuedCommits>
-        </hudson.plugins.git.GitRevisionBuildParameters>
+        <hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
+          <configs>
+            <hudson.plugins.git.GitRevisionBuildParameters plugin="git@2.4.1">
+              <combineQueuedCommits>false</combineQueuedCommits>
+            </hudson.plugins.git.GitRevisionBuildParameters>
+          </configs>
+          <projects>deploy-cd-demo, </projects>
+          <condition>SUCCESS</condition>
+          <triggerWithNoParameters>false</triggerWithNoParameters>
+        </hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
       </configs>
-      <downstreamProjectNames>deploy-cd-demo,</downstreamProjectNames>
-    </au.com.centrumsystems.hudson.plugin.buildpipeline.trigger.BuildPipelineTrigger>
+    </hudson.plugins.parameterizedtrigger.BuildTrigger>
   </publishers>
   <buildWrappers/>
 </project>
