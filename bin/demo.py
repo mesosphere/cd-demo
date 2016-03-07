@@ -209,7 +209,7 @@ if __name__ == "__main__":
             if not verify(jenkins_url):
                 install(dcos_url, jenkins_name, jenkins_url)
             if not arguments['--no-pipeline']:
-                branch = arguments['--branch']
+                branch = arguments['--branch'].lower()
                 org = arguments['--org']
                 username = arguments['--username']
                 password = arguments['--password']
