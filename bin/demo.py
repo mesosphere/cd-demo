@@ -3,10 +3,11 @@
 
 Usage:
     demo.py install [--name=<name>] (--no-pipeline | [--branch=<branch>] [--org=<org>] [--username=<user>] --password=<pass>) [--no-dynamic-slaves] [--builds=<n>] <dcos_url>
+    demo.py cleanup [--name=<name>] [--builds=<n>] <dcos_url>
     demo.py uninstall [--name=<name>] [--builds=<n>] <dcos_url>
 
 Options:
-    --name=<name>          Jenkins instance name to use [default: jenkins-demo].
+    --name=<name>          Jenkins instance name to use [default: jenkins].
     --no-pipeline          Don't run continuous delivery demo.
     --branch=<branch>      Git branch for continuous delivery demo [default: demo].
     --org=<org>            Docker Hub organisation where repo lives [default: mesosphere].
@@ -63,13 +64,12 @@ def install(dcos_url, jenkins_name, jenkins_url):
     shutil.copyfile("conf/jenkins.json", "tmp/jenkins.json")
     rename("tmp/jenkins.json", jenkins_name)
     command = "dcos package install --yes --options=tmp/jenkins.json jenkins"
-    print (command)
+    print ("\n> " + command)
     if call (['dcos', 'package', 'install', '--yes', '--options=tmp/jenkins.json', 'jenkins']) != 0:
         log ("Failed to install Jenkins")
         exit(1)
-    print("[demo] Jenkins has been installed! Wait for it to come up before proceeding at: {}".format(jenkins_url))
+    print("\n[demo] Jenkins has been installed! Wait for it to come up before proceeding at: {}".format(jenkins_url))
     raw_input("[demo] Press [Enter] to continue, or ^C to cancel...")
-    os.system('clear')
 
 def verify(jenkins_url):
     r = requests.get(jenkins_url)
@@ -148,7 +148,6 @@ def demo_pipeline(jenkins_url, dcos_url, name, branch, org, username, password):
     trigger_build(jenkins_url, "build-cd-demo")
     log ("Created demo pipeline")
     raw_input("[demo] Press [Enter] to continue, or ^C to cancel...")
-    os.system('clear')
 
 def demo_dynamic_slaves(jenkins_url, builds):
     log ("Creating {} freestyle Jenkins jobs".format(builds))
@@ -165,7 +164,6 @@ def demo_dynamic_slaves(jenkins_url, builds):
             log ("Job {} created successfully. Duration: {}. Result: {}. Triggering build.".format(job_name, duration, result))
     log ("Created {} freestyle Jenkins jobs".format(builds))
     raw_input("[demo] Press [Enter] to continue, or ^C to cancel...")
-    os.system('clear')
 
 def cleanup_pipeline_jobs (jenkins_url):
     log ("Cleaning up demo pipeline")
@@ -194,17 +192,16 @@ def uninstall(dcos_url, jenkins_name):
     if call (['dcos','package','uninstall','--app-id={}'.format(jenkins_name), 'jenkins']) != 0:
         log ("Failed to uninstall Jenkins")
         exit(1)
-    print("[demo] Jenkins has been uninstalled!")
+    log ("Jenkins has been uninstalled!")
 
 if __name__ == "__main__":
     arguments = docopt(__doc__, version="CD Demo 0.1")
 
-    jenkins_name = arguments['--name']
+    jenkins_name = arguments['--name'].lower()
     builds = int(arguments['--builds'])
     dcos_url = arguments['<dcos_url>']
     jenkins_url = '{}service/{}/'.format(dcos_url, jenkins_name)
 
-    os.system('clear')
     config_dcos_cli(dcos_url)
 
     try:
@@ -213,7 +210,10 @@ if __name__ == "__main__":
             if not verify(jenkins_url):
                 install(dcos_url, jenkins_name, jenkins_url)
             if not arguments['--no-pipeline']:
-                branch = arguments['--branch']
+                branch = arguments['--branch'].lower()
+                if branch == 'master':
+                    log("Cannot run demo against the master branch.")
+                    exit(1)
                 org = arguments['--org']
                 username = arguments['--username']
                 password = arguments['--password']
@@ -221,6 +221,8 @@ if __name__ == "__main__":
             if not arguments['--no-dynamic-slaves']:
                 demo_dynamic_slaves(jenkins_url, builds)
             remove_temp_dir()
+        elif arguments['cleanup']:
+            cleanup(jenkins_url, builds)
         elif arguments['uninstall']:
             cleanup(jenkins_url, builds)
             uninstall(dcos_url, jenkins_name)
