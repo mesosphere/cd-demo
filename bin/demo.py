@@ -191,7 +191,7 @@ def uninstall(dcos_url, jenkins_name):
     if call (['dcos','package','uninstall','--app-id={}'.format(jenkins_name), 'jenkins']) != 0:
         log ("Failed to uninstall Jenkins")
         exit(1)
-    print("[demo] Jenkins has been uninstalled!")
+    log ("Jenkins has been uninstalled!")
 
 if __name__ == "__main__":
     arguments = docopt(__doc__, version="CD Demo 0.1")
@@ -210,6 +210,9 @@ if __name__ == "__main__":
                 install(dcos_url, jenkins_name, jenkins_url)
             if not arguments['--no-pipeline']:
                 branch = arguments['--branch'].lower()
+                if branch == 'master':
+                    log("Cannot run demo against the master branch.")
+                    exit(1)
                 org = arguments['--org']
                 username = arguments['--username']
                 password = arguments['--password']
