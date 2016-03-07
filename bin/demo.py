@@ -3,6 +3,7 @@
 
 Usage:
     demo.py install [--name=<name>] (--no-pipeline | [--branch=<branch>] [--org=<org>] [--username=<user>] --password=<pass>) [--no-dynamic-slaves] [--builds=<n>] <dcos_url>
+    demo.py cleanup [--name=<name>] [--builds=<n>] <dcos_url>
     demo.py uninstall [--name=<name>] [--builds=<n>] <dcos_url>
 
 Options:
@@ -220,6 +221,8 @@ if __name__ == "__main__":
             if not arguments['--no-dynamic-slaves']:
                 demo_dynamic_slaves(jenkins_url, builds)
             remove_temp_dir()
+        elif arguments['cleanup']:
+            cleanup(jenkins_url, builds)
         elif arguments['uninstall']:
             cleanup(jenkins_url, builds)
             uninstall(dcos_url, jenkins_name)
