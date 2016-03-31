@@ -41,6 +41,8 @@ When run with the `uninstall` command, it will:
     ```
     bin/demo.py install --branch=my-demo-branch --password=mypass123 http://my.dcos.cluster/
     ```
+    NOTE: Dependeing on your environment you may need to prepend the above command with `python`
+    
 2. The script will install Jenkins and pause. Check that the Jenkins UI is running before hitting enter to proceed.
 3. The script will now use the Jenkins HTTP API to install jobs, necessary credentials and a view. It will automatically trigger the initial build before pausing.
 4. Navigate to the Jenkins UI to see the builds in progress. After a few seconds, you should see a build executor spinning up on Mesos. If you navigate to the configured view, you'll see the pipeline in progress.
