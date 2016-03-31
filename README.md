@@ -41,7 +41,7 @@ When run with the `uninstall` command, it will:
     ```
     bin/demo.py install --branch=my-demo-branch --password=mypass123 http://my.dcos.cluster/
     ```
-    NOTE: Dependeing on your environment you may need to prepend the above command with `python`
+    NOTE: Dependeing on your environment you may need to prepend the above command with `python` Also you must use the          domain name for your cluster; the IP address will fail.
     
 2. The script will install Jenkins and pause. Check that the Jenkins UI is running before hitting enter to proceed.
 3. The script will now use the Jenkins HTTP API to install jobs, necessary credentials and a view. It will automatically trigger the initial build before pausing.
