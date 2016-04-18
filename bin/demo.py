@@ -33,13 +33,18 @@ Each of these jobs will appear as a separate Jenkins build, and will randomly
 pass or fail. The duration of each job will be between 120 and 240 seconds.
 """
 
-from docopt import docopt
 import json
 import os
 import random
-import requests
 import shutil
 from subprocess import call
+
+import requests
+from docopt import docopt
+
+def pass_through(val):
+    return val
+auth_func = pass_through
 
 def log(message):
     print "[demo] {}".format(message)
@@ -204,11 +209,15 @@ if __name__ == "__main__":
     token = arguments['--token']
     jenkins_url = '{}service/{}/'.format(dcos_url, jenkins_name)
 
+    def add_auth_header(token_arg):
+        def auth_wrapper(headers):
+            if token_arg is not None and len(token_arg.strip()) > 0:
+                headers['Authorization'] = "token={}".format(token_arg)
+            return headers
+        return auth_wrapper
+    auth_func = add_auth_header(token)
+
     config_dcos_cli(dcos_url)
-    opts = {
-        'builds': builds,
-        'token':  token,
-    }
 
     try:
         if arguments['install']:
