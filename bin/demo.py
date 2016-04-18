@@ -78,7 +78,7 @@ def install(dcos_url, jenkins_name, jenkins_url):
     raw_input("[demo] Press [Enter] to continue, or ^C to cancel...")
 
 def verify(jenkins_url):
-    r = requests.get(jenkins_url)
+    r = requests.get(jenkins_url, headers=auth_func({}))
     if r.status_code != 200:
         log ("Couldn't find a Jenkins instance running at {}".format(jenkins_url))
         return False
@@ -88,12 +88,13 @@ def verify(jenkins_url):
 def create_credentials(jenkins_url, id, username, password):
     credential = { 'credentials' : { 'scope' : 'GLOBAL', 'id' : id, 'username' : username, 'password' : password, 'description' : id, '$class' : 'com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl'} }
     data = {'json' : json.dumps(credential) }
+    headers = auth_func({})
     post_url = "{}/credential-store/domain/_/createCredentials".format(jenkins_url)
-    r = requests.post(post_url, data=data)
+    r = requests.post(post_url, headers=headers, data=data)
 
 def create_job(jenkins_url, job_name, job_config):
     log ("Creating job")
-    headers = {'Content-Type' : 'application/xml' }
+    headers = auth_func({'Content-Type' : 'application/xml' })
     post_url = "{}/createItem?name={}".format(jenkins_url, job_name)
     r = requests.post(post_url, headers=headers, data=job_config)
     if r.status_code != 200:
@@ -103,7 +104,7 @@ def create_job(jenkins_url, job_name, job_config):
 
 def create_view(jenkins_url, view_name, view_config):
     log ("Creating view")
-    headers = {'Content-Type' : 'text/xml' }
+    headers = auth_func({'Content-Type' : 'text/xml' })
     post_url = "{}/createView?name={}".format(jenkins_url, view_name)
     r = requests.post(post_url, headers=headers, data=view_config)
 
@@ -113,22 +114,22 @@ def trigger_build(jenkins_url, job_name, parameter_string = None):
         post_url = "{}/job/{}/buildWithParameters?{}".format(jenkins_url, job_name, parameter_string)
     else:
         post_url = "{}/job/{}/build".format(jenkins_url, job_name)
-    r = requests.post(post_url)
+    r = requests.post(post_url, headers=auth_func({}))
 
 def delete_credentials(jenkins_url, credential_name):
     log ("Deleting credentials {}".format(credential_name))
     post_url = "{}/credential-store/domain/_/credential/{}/doDelete".format(jenkins_url, credential_name)
-    r = requests.post(post_url)
+    r = requests.post(post_url, headers=auth_func({}))
 
 def delete_job(jenkins_url, job_name):
     log ("Deleting job {}".format(job_name))
     post_url = "{}/job/{}/doDelete".format(jenkins_url, job_name)
-    r = requests.post(post_url)
+    r = requests.post(post_url, headers=auth_func({}))
 
 def delete_view(jenkins_url, view_name):
     log ("Deleting view {}".format(view_name))
     post_url = "{}/view/{}/doDelete".format(jenkins_url, view_name)
-    r = requests.post(post_url)
+    r = requests.post(post_url, headers=auth_func({}))
 
 def remove_temp_dir():
     shutil.rmtree("tmp", ignore_errors=True)
