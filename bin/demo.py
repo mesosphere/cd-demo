@@ -2,7 +2,7 @@
 """demo.py
 
 Usage:
-    demo.py install [--name=<name>] (--no-pipeline | [--branch=<branch>] [--org=<org>] [--username=<user>] --password=<pass>) [--no-dynamic-slaves] [--builds=<n>] <dcos_url>
+    demo.py install [--name=<name>] (--no-pipeline | [--branch=<branch>] [--org=<org>] [--username=<user>] --password=<pass>) [--token=<token>] [--no-dynamic-slaves] [--builds=<n>] <dcos_url>
     demo.py cleanup [--name=<name>] [--builds=<n>] <dcos_url>
     demo.py uninstall [--name=<name>] [--builds=<n>] <dcos_url>
 
@@ -13,6 +13,7 @@ Options:
     --org=<org>            Docker Hub organisation where repo lives [default: mesosphere].
     --username=<user>      Docker Hub username to push image with [default: cddemo].
     --password=<pass>      Docker Hub password to push image with.
+    --token=<token>        DCOS authorization token.
     --no-dynamic-slaves    Don't run dynamic slaves demo.
     --builds=<n>           Number of builds to create [default: 50].
 
@@ -200,9 +201,14 @@ if __name__ == "__main__":
     jenkins_name = arguments['--name'].lower()
     builds = int(arguments['--builds'])
     dcos_url = arguments['<dcos_url>']
+    token = arguments['--token']
     jenkins_url = '{}service/{}/'.format(dcos_url, jenkins_name)
 
     config_dcos_cli(dcos_url)
+    opts = {
+        'builds': builds,
+        'token':  token,
+    }
 
     try:
         if arguments['install']:
