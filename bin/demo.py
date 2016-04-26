@@ -1,8 +1,8 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """demo.py
 
 Usage:
-    demo.py install [--name=<name>] (--no-pipeline | [--branch=<branch>] [--org=<org>] [--username=<user>] --password=<pass>) [--no-dynamic-slaves] [--builds=<n>] <dcos_url>
+    demo.py install [--name=<name>] (--no-pipeline | [--branch=<branch>] [--org=<org>] [--username=<user>] --password=<pass>) [--token=<token>] [--no-dynamic-slaves] [--builds=<n>] <dcos_url>
     demo.py cleanup [--name=<name>] [--builds=<n>] <dcos_url>
     demo.py uninstall [--name=<name>] [--builds=<n>] <dcos_url>
 
@@ -13,6 +13,7 @@ Options:
     --org=<org>            Docker Hub organisation where repo lives [default: mesosphere].
     --username=<user>      Docker Hub username to push image with [default: cddemo].
     --password=<pass>      Docker Hub password to push image with.
+    --token=<token>        DCOS authorization token.
     --no-dynamic-slaves    Don't run dynamic slaves demo.
     --builds=<n>           Number of builds to create [default: 50].
 
@@ -32,13 +33,18 @@ Each of these jobs will appear as a separate Jenkins build, and will randomly
 pass or fail. The duration of each job will be between 120 and 240 seconds.
 """
 
-from docopt import docopt
 import json
 import os
 import random
-import requests
 import shutil
 from subprocess import call
+
+import requests
+from docopt import docopt
+
+def pass_through(val):
+    return val
+auth_func = pass_through
 
 def log(message):
     print "[demo] {}".format(message)
@@ -72,7 +78,7 @@ def install(dcos_url, jenkins_name, jenkins_url):
     raw_input("[demo] Press [Enter] to continue, or ^C to cancel...")
 
 def verify(jenkins_url):
-    r = requests.get(jenkins_url)
+    r = requests.get(jenkins_url, headers=auth_func({}))
     if r.status_code != 200:
         log ("Couldn't find a Jenkins instance running at {}".format(jenkins_url))
         return False
@@ -82,22 +88,23 @@ def verify(jenkins_url):
 def create_credentials(jenkins_url, id, username, password):
     credential = { 'credentials' : { 'scope' : 'GLOBAL', 'id' : id, 'username' : username, 'password' : password, 'description' : id, '$class' : 'com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl'} }
     data = {'json' : json.dumps(credential) }
+    headers = auth_func({})
     post_url = "{}/credential-store/domain/_/createCredentials".format(jenkins_url)
-    r = requests.post(post_url, data=data)
+    r = requests.post(post_url, headers=headers, data=data)
 
 def create_job(jenkins_url, job_name, job_config):
     log ("Creating job")
-    headers = {'Content-Type' : 'application/xml' }
+    headers = auth_func({'Content-Type' : 'application/xml' })
     post_url = "{}/createItem?name={}".format(jenkins_url, job_name)
     r = requests.post(post_url, headers=headers, data=job_config)
     if r.status_code != 200:
         log ("Failed to create job {} at {}".format(job_name, jenkins_url))
-        exit(1)
+        r.raise_for_status()
     log ("Job {} created successfully".format(job_name))
 
 def create_view(jenkins_url, view_name, view_config):
     log ("Creating view")
-    headers = {'Content-Type' : 'text/xml' }
+    headers = auth_func({'Content-Type' : 'text/xml' })
     post_url = "{}/createView?name={}".format(jenkins_url, view_name)
     r = requests.post(post_url, headers=headers, data=view_config)
 
@@ -107,22 +114,22 @@ def trigger_build(jenkins_url, job_name, parameter_string = None):
         post_url = "{}/job/{}/buildWithParameters?{}".format(jenkins_url, job_name, parameter_string)
     else:
         post_url = "{}/job/{}/build".format(jenkins_url, job_name)
-    r = requests.post(post_url)
+    r = requests.post(post_url, headers=auth_func({}))
 
 def delete_credentials(jenkins_url, credential_name):
     log ("Deleting credentials {}".format(credential_name))
     post_url = "{}/credential-store/domain/_/credential/{}/doDelete".format(jenkins_url, credential_name)
-    r = requests.post(post_url)
+    r = requests.post(post_url, headers=auth_func({}))
 
 def delete_job(jenkins_url, job_name):
     log ("Deleting job {}".format(job_name))
     post_url = "{}/job/{}/doDelete".format(jenkins_url, job_name)
-    r = requests.post(post_url)
+    r = requests.post(post_url, headers=auth_func({}))
 
 def delete_view(jenkins_url, view_name):
     log ("Deleting view {}".format(view_name))
     post_url = "{}/view/{}/doDelete".format(jenkins_url, view_name)
-    r = requests.post(post_url)
+    r = requests.post(post_url, headers=auth_func({}))
 
 def remove_temp_dir():
     shutil.rmtree("tmp", ignore_errors=True)
@@ -200,7 +207,16 @@ if __name__ == "__main__":
     jenkins_name = arguments['--name'].lower()
     builds = int(arguments['--builds'])
     dcos_url = arguments['<dcos_url>']
+    token = arguments['--token']
     jenkins_url = '{}service/{}/'.format(dcos_url, jenkins_name)
+
+    def add_auth_header(token_arg):
+        def auth_wrapper(headers):
+            if token_arg is not None and len(token_arg.strip()) > 0:
+                headers['Authorization'] = "token={}".format(token_arg)
+            return headers
+        return auth_wrapper
+    auth_func = add_auth_header(token)
 
     config_dcos_cli(dcos_url)
 
