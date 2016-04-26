@@ -99,7 +99,7 @@ def create_job(jenkins_url, job_name, job_config):
     r = requests.post(post_url, headers=headers, data=job_config)
     if r.status_code != 200:
         log ("Failed to create job {} at {}".format(job_name, jenkins_url))
-        exit(1)
+        r.raise_for_status()
     log ("Job {} created successfully".format(job_name))
 
 def create_view(jenkins_url, view_name, view_config):
