@@ -7,17 +7,15 @@
       "network": "BRIDGE",
       "portMappings": [
         {
-          "hostPort": 80,
           "containerPort": 80,
           "protocol": "tcp"
         }
       ]
     }
   },
-  "acceptedResourceRoles": [
-    "slave_public"
-  ],
   "labels": {
+    "HAPROXY_GROUP": "external",
+    "HAPROXY_0_VHOST": "brenden-7-publicsl-1dnroe89snjkq-221614774.us-west-2.elb.amazonaws.com",
     "lastChangedBy": "sunil@mesosphere.io"
   },
   "instances": 1,
