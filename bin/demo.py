@@ -117,8 +117,9 @@ def create_job(jenkins_url, job_name, job_config):
     post_url = "{}/createItem?name={}".format(jenkins_url, job_name)
     r = requests.post(post_url, headers=headers, data=job_config)
     if r.status_code != 200:
-        log_and_exit ("Failed to create job {} at {}".format(job_name, jenkins_url))
-    log ("Job {} created successfully.".format(job_name))
+        log ("Failed to create job {} at {}.".format(job_name, jenkins_url))
+        r.raise_for_status()
+    log ("Job {} created successfully".format(job_name))
 
 def create_view(jenkins_url, view_name, view_config):
     log ("Creating view")
