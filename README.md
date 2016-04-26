@@ -47,8 +47,9 @@ When run with the `uninstall` command, it will:
     ```
     bin/demo.py install --branch=my-demo-branch --password=mypass123 http://my.dcos.cluster/
     ```
+
     NOTE: Depending on your environment you may need to prepend the above command with `python` Also you must use the domain name for your cluster; the IP address will fail.
-    
+
 2. The script will install Jenkins and pause. Check that the Jenkins UI is running before hitting enter to proceed.
 3. The script will now use the Jenkins HTTP API to install jobs, necessary credentials and a view. It will automatically trigger the initial build before pausing.
 4. Navigate to the Jenkins UI to see the builds in progress. After a few seconds, you should see a build executor spinning up on Mesos. If you navigate to the configured view, you'll see the pipeline in progress.
@@ -78,6 +79,20 @@ By default, this script assumes you will be pushing to the [mesosphere/cd-demo-a
     ```
     bin/demo.py install --branch=my-demo-branch --org=myorg --username=myuser --password=mypass123 http://my.dcos.cluster/
     ```
+
+### Demoing with marathon-lb
+
+1. Find the public ELB hostname for your cluster. For this example, we'll assume your hostname is `brenden-7-publicsl-1dnroe89snjkq-221614774.us-west-2.elb.amazonaws.com`
+1. Update the `marathon.json` labels with your vhost:
+
+  ```json
+  {
+    "labels": {
+      "HAPROXY_0_VHOST": "brenden-7-publicsl-1dnroe89snjkq-221614774.us-west-2.elb.amazonaws.com",
+      "HAPROXY_GROUP": "external"
+    }
+  }
+  ```
 
 ### Build on Commit
 
