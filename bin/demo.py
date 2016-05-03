@@ -2,7 +2,7 @@
 """demo.py
 
 Usage:
-    demo.py install [--name=<name>] (--no-pipeline | [--branch=<branch>] [--org=<org>] [--username=<user>] --password=<pass>) [--token=<token>] [--no-dynamic-slaves] [--builds=<n>] <dcos_url>
+    demo.py install [--name=<name>] (--no-pipeline | [--branch=<branch>] [--org=<org>] [--username=<user>] --password=<pass>) [--no-dynamic-slaves] [--builds=<n>] <dcos_url>
     demo.py cleanup [--name=<name>] [--builds=<n>] <dcos_url>
     demo.py uninstall [--name=<name>] [--builds=<n>] <dcos_url>
 
@@ -13,7 +13,6 @@ Options:
     --org=<org>            Docker Hub organisation where repo lives [default: mesosphere].
     --username=<user>      Docker Hub username to push image with [default: cddemo].
     --password=<pass>      Docker Hub password to push image with.
-    --token=<token>        DCOS authorization token.
     --no-dynamic-slaves    Don't run dynamic slaves demo.
     --builds=<n>           Number of builds to create [default: 50].
 
@@ -37,22 +36,42 @@ import json
 import os
 import random
 import shutil
-from subprocess import call
+from subprocess import call, CalledProcessError, check_output
 
 import requests
 from docopt import docopt
 
-def pass_through(val):
-    return val
-auth_func = pass_through
-
 def log(message):
     print "[demo] {}".format(message)
 
+def log_and_exit(message):
+    log(message)
+    exit(1)
+
+def get_auth_wrapper(token_arg):
+    def auth_wrapper(headers):
+        if token_arg is not None and len(token_arg.strip()) > 0:
+            headers['Authorization'] = "token={}".format(token_arg)
+        return headers
+    return auth_wrapper
+
+auth_func = get_auth_wrapper(None)
+
+def check_and_set_token(jenkins_url):
+    try:
+        global auth_func
+        command = "dcos config show core.dcos_acs_token"
+        token = check_output(command, shell=True).strip('\n')
+        auth_func = get_auth_wrapper(token)
+        r = requests.get(jenkins_url, headers=auth_func({}))
+        if r.status_code == 401:
+            log_and_exit("Not authenticated. Please run `dcos auth login` and try again.")
+    except CalledProcessError:
+        log_and_exit ("Not authenticated. Please run `dcos auth login` and try again.")
+
 def config_dcos_cli(dcos_url):
     if call (["dcos", "config", "set", "core.dcos_url", dcos_url],stdout=open(os.devnull, 'wb')) == 1:
-        log("Unable to configure DCOS CLI.")
-        exit(1)
+        log_and_exit ("Unable to configure DCOS CLI.")
 
 def make_temp_dir():
     remove_temp_dir()
@@ -72,8 +91,7 @@ def install(dcos_url, jenkins_name, jenkins_url):
     command = "dcos package install --yes --options=tmp/jenkins.json jenkins"
     print ("\n> " + command)
     if call (['dcos', 'package', 'install', '--yes', '--options=tmp/jenkins.json', 'jenkins']) != 0:
-        log ("Failed to install Jenkins")
-        exit(1)
+        log_and_exit ("Failed to install Jenkins.")
     print("\n[demo] Jenkins has been installed! Wait for it to come up before proceeding at: {}".format(jenkins_url))
     raw_input("[demo] Press [Enter] to continue, or ^C to cancel...")
 
@@ -98,9 +116,8 @@ def create_job(jenkins_url, job_name, job_config):
     post_url = "{}/createItem?name={}".format(jenkins_url, job_name)
     r = requests.post(post_url, headers=headers, data=job_config)
     if r.status_code != 200:
-        log ("Failed to create job {} at {}".format(job_name, jenkins_url))
-        exit(1)
-    log ("Job {} created successfully".format(job_name))
+        log_and_exit ("Failed to create job {} at {}".format(job_name, jenkins_url))
+    log ("Job {} created successfully.".format(job_name))
 
 def create_view(jenkins_url, view_name, view_config):
     log ("Creating view")
@@ -109,7 +126,7 @@ def create_view(jenkins_url, view_name, view_config):
     r = requests.post(post_url, headers=headers, data=view_config)
 
 def trigger_build(jenkins_url, job_name, parameter_string = None):
-    log ("Triggering build {}".format(job_name))
+    log ("Triggering build {}.".format(job_name))
     if parameter_string:
         post_url = "{}/job/{}/buildWithParameters?{}".format(jenkins_url, job_name, parameter_string)
     else:
@@ -117,17 +134,17 @@ def trigger_build(jenkins_url, job_name, parameter_string = None):
     r = requests.post(post_url, headers=auth_func({}))
 
 def delete_credentials(jenkins_url, credential_name):
-    log ("Deleting credentials {}".format(credential_name))
+    log ("Deleting credentials {}.".format(credential_name))
     post_url = "{}/credential-store/domain/_/credential/{}/doDelete".format(jenkins_url, credential_name)
     r = requests.post(post_url, headers=auth_func({}))
 
 def delete_job(jenkins_url, job_name):
-    log ("Deleting job {}".format(job_name))
+    log ("Deleting job {}.".format(job_name))
     post_url = "{}/job/{}/doDelete".format(jenkins_url, job_name)
     r = requests.post(post_url, headers=auth_func({}))
 
 def delete_view(jenkins_url, view_name):
-    log ("Deleting view {}".format(view_name))
+    log ("Deleting view {}.".format(view_name))
     post_url = "{}/view/{}/doDelete".format(jenkins_url, view_name)
     r = requests.post(post_url, headers=auth_func({}))
 
@@ -135,7 +152,7 @@ def remove_temp_dir():
     shutil.rmtree("tmp", ignore_errors=True)
 
 def demo_pipeline(jenkins_url, dcos_url, name, branch, org, username, password):
-    log ("Creating demo pipeline")
+    log ("Creating demo pipeline.")
     create_credentials(jenkins_url, 'docker-hub-credentials', username, password)
     with open("jobs/build-cd-demo/config.xml") as build_job:
         job_config = build_job.read().replace("GIT_BRANCH", branch)
@@ -153,11 +170,11 @@ def demo_pipeline(jenkins_url, dcos_url, name, branch, org, username, password):
         view_config = pipeline_view.read()
         create_view(jenkins_url, "cd-demo-pipeline", view_config)
     trigger_build(jenkins_url, "build-cd-demo")
-    log ("Created demo pipeline")
+    log ("Created demo pipeline.")
     raw_input("[demo] Press [Enter] to continue, or ^C to cancel...")
 
 def demo_dynamic_slaves(jenkins_url, builds):
-    log ("Creating {} freestyle Jenkins jobs".format(builds))
+    log ("Creating {} freestyle Jenkins jobs.".format(builds))
     random.seed()
     with open("jobs/demo-job/config.xml") as demo_job:
         job_config = demo_job.read()
@@ -169,11 +186,11 @@ def demo_dynamic_slaves(jenkins_url, builds):
             parameter_string = '?DURATION={}&RESULT={}'.format(duration, result)
             trigger_build(jenkins_url, job_name, parameter_string)
             log ("Job {} created successfully. Duration: {}. Result: {}. Triggering build.".format(job_name, duration, result))
-    log ("Created {} freestyle Jenkins jobs".format(builds))
+    log ("Created {} freestyle Jenkins jobs.".format(builds))
     raw_input("[demo] Press [Enter] to continue, or ^C to cancel...")
 
 def cleanup_pipeline_jobs (jenkins_url):
-    log ("Cleaning up demo pipeline")
+    log ("Cleaning up demo pipeline.")
     delete_credentials(jenkins_url, "docker-hub-credentials")
     delete_view(jenkins_url, "cd-demo-pipeline")
     delete_job(jenkins_url, "deploy-cd-demo")
@@ -181,24 +198,23 @@ def cleanup_pipeline_jobs (jenkins_url):
     delete_job(jenkins_url, "build-cd-demo")
 
 def cleanup_dynamic_slaves_jobs(jenkins_url, builds):
-    log ("Cleaning up {} builds".format(builds))
+    log ("Cleaning up {} builds.".format(builds))
     for i in range(1, builds):
         job_name = "demo-job-{0:02d}".format(i)
         delete_job(jenkins_url, job_name)
-    log ("Cleaned up {} builds".format(builds))
+    log ("Cleaned up {} builds.".format(builds))
 
 def cleanup(jenkins_url, builds):
-    log ("Cleaning up Jenkins")
+    log ("Cleaning up Jenkins.")
     cleanup_pipeline_jobs(jenkins_url)
     cleanup_dynamic_slaves_jobs(jenkins_url, builds)
 
 def uninstall(dcos_url, jenkins_name):
-    log ("Uninstalling Jenkins with name {}".format(jenkins_name))
+    log ("Uninstalling Jenkins with name {}.".format(jenkins_name))
     command = "dcos package uninstall --app-id={} jenkins".format(jenkins_name)
     print (command)
     if call (['dcos','package','uninstall','--app-id={}'.format(jenkins_name), 'jenkins']) != 0:
-        log ("Failed to uninstall Jenkins")
-        exit(1)
+        log_and_exit ("Failed to uninstall Jenkins.")
     log ("Jenkins has been uninstalled!")
 
 if __name__ == "__main__":
@@ -207,19 +223,10 @@ if __name__ == "__main__":
     jenkins_name = arguments['--name'].lower()
     builds = int(arguments['--builds'])
     dcos_url = arguments['<dcos_url>']
-    token = arguments['--token']
     jenkins_url = '{}service/{}/'.format(dcos_url, jenkins_name)
 
-    def add_auth_header(token_arg):
-        def auth_wrapper(headers):
-            if token_arg is not None and len(token_arg.strip()) > 0:
-                headers['Authorization'] = "token={}".format(token_arg)
-            return headers
-        return auth_wrapper
-    auth_func = add_auth_header(token)
-
+    check_and_set_token(jenkins_url)
     config_dcos_cli(dcos_url)
-
     try:
         if arguments['install']:
             make_temp_dir()
@@ -228,8 +235,7 @@ if __name__ == "__main__":
             if not arguments['--no-pipeline']:
                 branch = arguments['--branch'].lower()
                 if branch == 'master':
-                    log("Cannot run demo against the master branch.")
-                    exit(1)
+                    log_and_exit ("Cannot run demo against the master branch.")
                 org = arguments['--org']
                 username = arguments['--username']
                 password = arguments['--password']
