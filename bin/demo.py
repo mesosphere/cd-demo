@@ -96,6 +96,7 @@ def install(dcos_url, jenkins_name, jenkins_url):
     raw_input("[demo] Press [Enter] to continue, or ^C to cancel...")
 
 def verify(jenkins_url):
+    print (auth_func({}))
     r = requests.get(jenkins_url, headers=auth_func({}))
     if r.status_code != 200:
         log ("Couldn't find a Jenkins instance running at {}".format(jenkins_url))

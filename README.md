@@ -32,7 +32,8 @@ When run with the `uninstall` command, it will:
     git clone https://github.com/mesosphere/cd-demo.git
     ```
 2. [Set up the DCOS CLI](https://docs.mesosphere.com/administration/introcli/cli/) locally.
-3. Ensure you have a DCOS cluster available. 1 node will work but more than 1 node is preferable to demonstrate build parallelism. If you already had the CLI installed, make sure you set the new cluster URL and authenticate against it:
+
+3. Ensure you have a DCOS cluster available. 1 node will work but more than 1 node is preferable to demonstrate build parallelism. If you already had the CLI installed, make you sure you set the new cluster URL and authenticate against it:
 
     ```
     dcos config set core.dcos_url http://my.dcos.cluster/
