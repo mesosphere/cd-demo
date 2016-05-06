@@ -71,5 +71,7 @@ exit $exit_status</command>
       </configs>
     </hudson.plugins.parameterizedtrigger.BuildTrigger>
   </publishers>
-  <buildWrappers/>
+  <buildWrappers>
+    <org.jenkinsci.plugins.mesos.MesosSingleUseSlave plugin="mesos@0.11.0"/>
+  </buildWrappers>
 </project>
