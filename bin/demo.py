@@ -1,27 +1,26 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """demo.py
 
 Usage:
-    demo.py install [--name=<name>] (--no-pipeline | [--branch=<branch>] [--org=<org>] [--username=<user>] --password=<pass>) [--no-dynamic-slaves] [--builds=<n>] <dcos_url>
+    demo.py install [--name=<name>] <dcos_url>
+    demo.py pipeline  [--org=<org>] [--username=<user>] --branch=<branch> --password=<pass> <elb_url> <dcos_url>
+    demo.py dynamic-slaves [--builds=<n>] <dcos_url>
     demo.py cleanup [--name=<name>] [--builds=<n>] <dcos_url>
     demo.py uninstall [--name=<name>] [--builds=<n>] <dcos_url>
 
 Options:
     --name=<name>          Jenkins instance name to use [default: jenkins].
-    --no-pipeline          Don't run continuous delivery demo.
-    --branch=<branch>      Git branch for continuous delivery demo [default: demo].
+    --branch=<branch>      Git branch for continuous delivery demo.
     --org=<org>            Docker Hub organisation where repo lives [default: mesosphere].
     --username=<user>      Docker Hub username to push image with [default: cddemo].
     --password=<pass>      Docker Hub password to push image with.
-    --no-dynamic-slaves    Don't run dynamic slaves demo.
     --builds=<n>           Number of builds to create [default: 50].
 
 This script is used to demonstrate various features of Jenkins on the DCOS.
 
 Pre-requisites:
 + A DCOS CLI is configured and available on the PATH of the host system
-+ A running DCOS cluster greater than version 1.4. It currently does not
-work with clusters that have authentication enabled.
++ A running DCOS cluster greater than version 1.7.0.
 + Python dependencies are installed (pip install -r requirements.txt)
 
 The continuous delivery demo will create a build pipeline that will deploy a Docker
@@ -29,17 +28,18 @@ container to the DCOS Marathon.
 
 The dynamic slaves demo will create 50 (by default) "freestyle" Jenkins jobs.
 Each of these jobs will appear as a separate Jenkins build, and will randomly
-pass or fail. The duration of each job will be between 120 and 240 seconds.
+password or fail. The duration of each job will be between 120 and 240 seconds.
 """
 
 import json
 import os
 import random
-import shutil
-from subprocess import call, CalledProcessError, check_output
-
 import requests
+import shutil
+
 from docopt import docopt
+from subprocess import call, CalledProcessError, check_output
+from urlparse import urlparse
 
 def log(message):
     print "[demo] {}".format(message)
@@ -85,23 +85,57 @@ def rename(path, jenkins_name):
         json.dump(config, f, indent=4)
 
 def install(dcos_url, jenkins_name, jenkins_url):
-    log ("Installing Jenkins with name {}".format(jenkins_name))
+    log ("Installing Jenkins with name {}.".format(jenkins_name))
     shutil.copyfile("conf/jenkins.json", "tmp/jenkins.json")
     rename("tmp/jenkins.json", jenkins_name)
     command = "dcos package install --yes --options=tmp/jenkins.json jenkins"
     print ("\n> " + command)
     if call (['dcos', 'package', 'install', '--yes', '--options=tmp/jenkins.json', 'jenkins']) != 0:
         log_and_exit ("Failed to install Jenkins.")
-    print("\n[demo] Jenkins has been installed! Wait for it to come up before proceeding at: {}".format(jenkins_url))
-    raw_input("[demo] Press [Enter] to continue, or ^C to cancel...")
+    log("Jenkins has been installed! Wait for it to come up before proceeding at: {}".format(jenkins_url))
 
 def verify(jenkins_url):
     r = requests.get(jenkins_url, headers=auth_func({}))
     if r.status_code != 200:
-        log ("Couldn't find a Jenkins instance running at {}".format(jenkins_url))
+        log ("Couldn't find a Jenkins instance running at {}.".format(jenkins_url))
         return False
     log ("Jenkins is up and running! Got Jenkins version {}".format(r.headers['x-jenkins']))
     return True
+
+def install_marathon_lb(elb_url):
+    log("Checking to see if Marathon-lb is installed.")
+    r = requests.get(elb_url)
+    if r.status_code == 503:
+        log ("Couldn't find a Marathon-lb instance running at {}.".format(elb_url))
+        log ("Installing Marathon-lb.")
+        command = "dcos package install --yes marathon-lb"
+        print ("\n> " + command)
+        if call (['dcos', 'package', 'install', '--yes', 'marathon-lb']) != 0:
+            log ("Failed to install Marathon-lb.")
+        else:
+            log("Marathon-lb has been installed!")
+    else:
+        log ("Marathon-lb already seems to be running at {}. Not installing Marathon-lb.".format(elb_url))
+
+def strip_to_hostname(url):
+    parsed_url = urlparse(url)
+    return parsed_url.netloc
+
+def update_marathon_json(elb_url):
+    with open('marathon.json', 'r+') as f:
+        marathon = json.load(f)
+        marathon['labels']['HAPROXY_0_VHOST'] = elb_url
+        f.seek(0)
+        json.dump(marathon, f, indent=4, sort_keys=True, separators=(',', ': '))
+
+def update_and_push_marathon_json(elb_url, branch):
+    elb_hostname = strip_to_hostname(elb_url)
+    update_marathon_json(elb_hostname)
+    if call (['git', 'commit', '-a', '-m', 'Update marathon.json with ELB URL']) != 0:
+        log_and_exit ("Failed to commit updated marathon.json.")
+    if call (['git', 'push', 'origin', branch]) != 0:
+        log_and_exit ("Failed to push updated marathon.json.")
+    log ("Updated marathon.json with ELB hostname {}.".format(elb_hostname))
 
 def create_credentials(jenkins_url, id, username, password):
     credential = { 'credentials' : { 'scope' : 'GLOBAL', 'id' : id, 'username' : username, 'password' : password, 'description' : id, '$class' : 'com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl'} }
@@ -116,8 +150,9 @@ def create_job(jenkins_url, job_name, job_config):
     post_url = "{}/createItem?name={}".format(jenkins_url, job_name)
     r = requests.post(post_url, headers=headers, data=job_config)
     if r.status_code != 200:
-        log_and_exit ("Failed to create job {} at {}".format(job_name, jenkins_url))
-    log ("Job {} created successfully.".format(job_name))
+        log ("Failed to create job {} at {}.".format(job_name, jenkins_url))
+        r.raise_for_status()
+    log ("Job {} created successfully".format(job_name))
 
 def create_view(jenkins_url, view_name, view_config):
     log ("Creating view")
@@ -151,7 +186,7 @@ def delete_view(jenkins_url, view_name):
 def remove_temp_dir():
     shutil.rmtree("tmp", ignore_errors=True)
 
-def demo_pipeline(jenkins_url, dcos_url, name, branch, org, username, password):
+def demo_pipeline(jenkins_url, dcos_url, elb_url, name, branch, org, username, password):
     log ("Creating demo pipeline.")
     create_credentials(jenkins_url, 'docker-hub-credentials', username, password)
     with open("jobs/build-cd-demo/config.xml") as build_job:
@@ -171,7 +206,7 @@ def demo_pipeline(jenkins_url, dcos_url, name, branch, org, username, password):
         create_view(jenkins_url, "cd-demo-pipeline", view_config)
     trigger_build(jenkins_url, "build-cd-demo")
     log ("Created demo pipeline.")
-    raw_input("[demo] Press [Enter] to continue, or ^C to cancel...")
+    log("Once deployed, your application should be available at {}.".format(elb_url))
 
 def demo_dynamic_slaves(jenkins_url, builds):
     log ("Creating {} freestyle Jenkins jobs.".format(builds))
@@ -187,7 +222,6 @@ def demo_dynamic_slaves(jenkins_url, builds):
             trigger_build(jenkins_url, job_name, parameter_string)
             log ("Job {} created successfully. Duration: {}. Result: {}. Triggering build.".format(job_name, duration, result))
     log ("Created {} freestyle Jenkins jobs.".format(builds))
-    raw_input("[demo] Press [Enter] to continue, or ^C to cancel...")
 
 def cleanup_pipeline_jobs (jenkins_url):
     log ("Cleaning up demo pipeline.")
@@ -223,26 +257,30 @@ if __name__ == "__main__":
     jenkins_name = arguments['--name'].lower()
     builds = int(arguments['--builds'])
     dcos_url = arguments['<dcos_url>']
+    elb_url = arguments['<elb_url>'] #TODO: FIX ME
     jenkins_url = '{}service/{}/'.format(dcos_url, jenkins_name)
 
-    check_and_set_token(jenkins_url)
     config_dcos_cli(dcos_url)
+    check_and_set_token(jenkins_url)
+
     try:
         if arguments['install']:
             make_temp_dir()
             if not verify(jenkins_url):
                 install(dcos_url, jenkins_name, jenkins_url)
-            if not arguments['--no-pipeline']:
-                branch = arguments['--branch'].lower()
-                if branch == 'master':
-                    log_and_exit ("Cannot run demo against the master branch.")
-                org = arguments['--org']
-                username = arguments['--username']
-                password = arguments['--password']
-                demo_pipeline(jenkins_url, dcos_url, jenkins_name, branch, org, username, password)
-            if not arguments['--no-dynamic-slaves']:
-                demo_dynamic_slaves(jenkins_url, builds)
             remove_temp_dir()
+        elif arguments['pipeline']:
+            branch = arguments['--branch'].lower()
+            if branch == 'master':
+                log_and_exit ("Cannot run demo against the master branch.")
+            org = arguments['--org']
+            username = arguments['--username']
+            password = arguments['--password']
+            install_marathon_lb(elb_url)
+            update_and_push_marathon_json(elb_url, branch)
+            demo_pipeline(jenkins_url, dcos_url, elb_url, jenkins_name, branch, org, username, password)
+        elif arguments['dynamic-slaves']:
+            demo_dynamic_slaves(jenkins_url, builds)
         elif arguments['cleanup']:
             cleanup(jenkins_url, builds)
         elif arguments['uninstall']:

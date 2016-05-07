@@ -37,7 +37,7 @@
 cat marathon.json | jq ".container.docker.image = \"mesosphere/cd-demo-app:${GIT_COMMIT}\" | .id = \"JENKINS_NAME-deployed-app\" | .labels.lastChangedBy = \"${GIT_EMAIL}\" " &gt; marathon-rendered.json</command>
     </hudson.tasks.Shell>
     <hudson.tasks.Shell>
-      <command>curl -X PUT DCOS_URL/marathon/v2/apps/JENKINS_NAME-deployed-app -d @marathon-rendered.json -H "Content-type: application/json"</command>
+      <command>curl -X PUT http://marathon.mesos:8080/v2/apps/JENKINS_NAME-deployed-app -d @marathon-rendered.json -H "Content-type: application/json"</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers/>
