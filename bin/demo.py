@@ -28,7 +28,7 @@ container to the DCOS Marathon.
 
 The dynamic slaves demo will create 50 (by default) "freestyle" Jenkins jobs.
 Each of these jobs will appear as a separate Jenkins build, and will randomly
-password or fail. The duration of each job will be between 120 and 240 seconds.
+pass or fail. The duration of each job will be between 120 and 240 seconds.
 """
 
 import json
