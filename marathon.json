@@ -1,37 +1,37 @@
 {
     "container": {
         "docker": {
+            "image": "mesosphere/cd-demo-app:latest",
+            "network": "BRIDGE",
             "portMappings": [
                 {
-                    "protocol": "tcp", 
-                    "containerPort": 80
+                    "containerPort": 80,
+                    "protocol": "tcp"
                 }
-            ], 
-            "image": "mesosphere/cd-demo-app:latest", 
-            "network": "BRIDGE"
-        }, 
+            ]
+        },
         "type": "DOCKER"
-    }, 
-    "mem": 128, 
-    "labels": {
-        "HAPROXY_0_VHOST": "sunil-hmn-publicsl-1r7bxhf4dhac9-168401632.us-west-2.elb.amazonaws.com", 
-        "HAPROXY_GROUP": "external", 
-        "lastChangedBy": "sunil@mesosphere.io"
-    }, 
-    "cpus": 0.1, 
-    "instances": 1, 
+    },
+    "cpus": 0.1,
     "healthChecks": [
         {
-            "portIndex": 0, 
-            "protocol": "TCP", 
-            "timeoutSeconds": 10, 
-            "intervalSeconds": 30, 
-            "gracePeriodSeconds": 600, 
-            "maxConsecutiveFailures": 2
+            "gracePeriodSeconds": 600,
+            "intervalSeconds": 30,
+            "maxConsecutiveFailures": 2,
+            "portIndex": 0,
+            "protocol": "TCP",
+            "timeoutSeconds": 10
         }
-    ], 
+    ],
+    "id": "cd-demo-app",
+    "instances": 1,
+    "labels": {
+        "HAPROXY_0_VHOST": "sunil-47w-publicsl-m1vwp1a76csu-2761625.us-west-2.elb.amazonaws.com",
+        "HAPROXY_GROUP": "external",
+        "lastChangedBy": "sunil@mesosphere.io"
+    },
+    "mem": 128,
     "upgradeStrategy": {
         "minimumHealthCapacity": 0
-    }, 
-    "id": "cd-demo-app"
+    }
 }
