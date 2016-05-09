@@ -105,7 +105,7 @@ def verify(jenkins_url):
 def install_marathon_lb(elb_url):
     log("Checking to see if Marathon-lb is installed.")
     r = requests.get(elb_url)
-    if r.status_code == 503:
+    if r.status_code == 503 and not r.text:
         log ("Couldn't find a Marathon-lb instance running at {}.".format(elb_url))
         log ("Installing Marathon-lb.")
         command = "dcos package install --yes marathon-lb"
