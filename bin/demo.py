@@ -126,13 +126,14 @@ def update_marathon_json(elb_url):
         marathon = json.load(f)
         marathon['labels']['HAPROXY_0_VHOST'] = elb_url
         f.seek(0)
+        f.truncate()
         json.dump(marathon, f, indent=4, sort_keys=True, separators=(',', ': '))
 
 def update_and_push_marathon_json(elb_url, branch):
     elb_hostname = strip_to_hostname(elb_url)
     update_marathon_json(elb_hostname)
     if call (['git', 'commit', '-a', '-m', 'Update marathon.json with ELB URL']) != 0:
-        log_and_exit ("Failed to commit updated marathon.json.")
+        log ("Failed to commit updated marathon.json.")
     if call (['git', 'push', 'origin', branch]) != 0:
         log_and_exit ("Failed to push updated marathon.json.")
     log ("Updated marathon.json with ELB hostname {}.".format(elb_hostname))
