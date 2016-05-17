@@ -36,13 +36,13 @@
       <command>#!/bin/bash
 
 # Run the container we just built
-docker run -d --name=test-container-${BUILD_NUMBER} -p 80:80 mesosphere/cd-demo-app:${GIT_COMMIT}
+docker run -d --name=test-container-${BUILD_NUMBER} mesosphere/cd-demo-app:${GIT_COMMIT}
 
 # Grab IP address
 ip_address=$(docker inspect test-container-${BUILD_NUMBER} | jq -r &apos;.[0].NetworkSettings.IPAddress&apos;)
 
 # Run linkchecker against website
-docker run mesosphere/linkchecker linkchecker --no-warnings http://$ip_address/
+docker run mesosphere/linkchecker linkchecker --no-warnings http://$ip_address:4000/
 
 # Linkchecker exist with exit status 1 if it detects broken links
 exit_status=$?
