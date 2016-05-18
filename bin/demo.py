@@ -102,20 +102,26 @@ def verify(jenkins_url):
     log ("Jenkins is up and running! Got Jenkins version {}".format(r.headers['x-jenkins']))
     return True
 
-def install_marathon_lb(elb_url):
+def check_marathon_lb(elb_url):
     log("Checking to see if Marathon-lb is installed.")
-    r = requests.get(elb_url)
-    if r.status_code == 503 and not r.text:
-        log ("Couldn't find a Marathon-lb instance running at {}.".format(elb_url))
-        log ("Installing Marathon-lb.")
-        command = "dcos package install --yes marathon-lb"
-        print ("\n> " + command)
-        if call (['dcos', 'package', 'install', '--yes', 'marathon-lb']) != 0:
-            log ("Failed to install Marathon-lb.")
+    try:
+        r = requests.get(elb_url)
+        if r.status_code == 503 and not r.text:
+            install_marathon_lb(elb_url)
         else:
-            log("Marathon-lb has been installed!")
+            log ("Marathon-lb already seems to be running at {}. Not installing Marathon-lb.".format(elb_url))
+    except requests.exceptions.ConnectionError:
+        install_marathon_lb(elb_url)
+
+def install_marathon_lb(elb_url):
+    log ("Couldn't find a Marathon-lb instance running at {}.".format(elb_url))
+    log ("Installing Marathon-lb.")
+    command = "dcos package install --yes marathon-lb"
+    print ("\n> " + command)
+    if call (['dcos', 'package', 'install', '--yes', 'marathon-lb']) != 0:
+        log ("Failed to install Marathon-lb.")
     else:
-        log ("Marathon-lb already seems to be running at {}. Not installing Marathon-lb.".format(elb_url))
+        log("Marathon-lb has been installed!")
 
 def strip_to_hostname(url):
     parsed_url = urlparse(url)
@@ -277,7 +283,7 @@ if __name__ == "__main__":
             org = arguments['--org']
             username = arguments['--username']
             password = arguments['--password']
-            install_marathon_lb(elb_url)
+            check_marathon_lb(elb_url)
             update_and_push_marathon_json(elb_url, branch)
             demo_pipeline(jenkins_url, dcos_url, elb_url, jenkins_name, branch, org, username, password)
         elif arguments['dynamic-slaves']:
