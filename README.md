@@ -51,7 +51,7 @@ When run with the `uninstall` command, it will:
     dcos config set core.dcos_url http://my.dcos.cluster/
     dcos auth login
     ```
-4. Export the password to an environment variable (ideally put it in your ~/.bashrc). You will need to replace the password here with the password for the `cddemo` user with permission to push to `mesosphere/cd-demo-app` (or your own repo, if you override the `--org` and `--username` flags later):
+4. Export the demo password (NOT the DC/OS cluster password) to an environment variable (ideally put it in your ~/.bashrc). You will need to replace the password here with the password for the `cddemo` user with permission to push to `mesosphere/cd-demo-app` (or your own repo, if you override the `--org` and `--username` flags later):
 
     ```
     export PASSWORD=mypass123
