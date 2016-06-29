@@ -28,7 +28,7 @@
     "labels": {
         "HAPROXY_0_VHOST": "philip-ci-publicsl-klgk5o9t1w1m-1909416676.us-west-2.elb.amazonaws.com",
         "HAPROXY_GROUP": "external",
-        "lastChangedBy": "philip@mesosphere.io"
+        "lastChangedBy": "sunil@mesosphere.io"
     },
     "mem": 128,
     "upgradeStrategy": {
