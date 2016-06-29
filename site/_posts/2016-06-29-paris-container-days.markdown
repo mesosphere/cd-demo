@@ -6,3 +6,5 @@ categories: demo
 
 It's lovely here, the weather's great and everybody is so nice.
 
+And lunch was also delicious.
+
