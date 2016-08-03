@@ -220,7 +220,7 @@ def demo_dynamic_slaves(jenkins_url, builds):
     random.seed()
     with open("jobs/demo-job/config.xml") as demo_job:
         job_config = demo_job.read()
-        for i in range(1, builds):
+        for i in range(builds):
             job_name = "demo-job-{0:02d}".format(i)
             create_job(jenkins_url, job_name, job_config)
             duration = random.randint(120, 240)
