@@ -63,7 +63,7 @@ def check_and_set_token(jenkins_url):
         command = "dcos config show core.dcos_acs_token"
         token = check_output(command, shell=True).strip('\n')
         auth_func = get_auth_wrapper(token)
-        r = requests.get(jenkins_url, headers=auth_func({}))
+        r = requests.get(jenkins_url, headers=auth_func({}), verify=False)
         if r.status_code == 401:
             log_and_exit("Not authenticated. Please run `dcos auth login` and try again.")
     except CalledProcessError:
@@ -95,7 +95,7 @@ def install(dcos_url, jenkins_name, jenkins_url):
     log("Jenkins has been installed! Wait for it to come up before proceeding at: {}".format(jenkins_url))
 
 def verify(jenkins_url):
-    r = requests.get(jenkins_url, headers=auth_func({}))
+    r = requests.get(jenkins_url, headers=auth_func({}), verify=False)
     if r.status_code != 200:
         log ("Couldn't find a Jenkins instance running at {}.".format(jenkins_url))
         return False
@@ -105,7 +105,7 @@ def verify(jenkins_url):
 def check_marathon_lb(elb_url):
     log("Checking to see if Marathon-lb is installed.")
     try:
-        r = requests.get(elb_url)
+        r = requests.get(elb_url, verify=False)
         if r.status_code == 503 and not r.text:
             install_marathon_lb(elb_url)
         else:
@@ -149,13 +149,13 @@ def create_credentials(jenkins_url, id, username, password):
     data = {'json' : json.dumps(credential) }
     headers = auth_func({})
     post_url = "{}/credential-store/domain/_/createCredentials".format(jenkins_url)
-    r = requests.post(post_url, headers=headers, data=data)
+    r = requests.post(post_url, headers=headers, data=data, verify=False)
 
 def create_job(jenkins_url, job_name, job_config):
     log ("Creating job")
     headers = auth_func({'Content-Type' : 'application/xml' })
     post_url = "{}/createItem?name={}".format(jenkins_url, job_name)
-    r = requests.post(post_url, headers=headers, data=job_config)
+    r = requests.post(post_url, headers=headers, data=job_config, verify=False)
     if r.status_code != 200:
         log ("Failed to create job {} at {}.".format(job_name, jenkins_url))
         r.raise_for_status()
@@ -165,7 +165,7 @@ def create_view(jenkins_url, view_name, view_config):
     log ("Creating view")
     headers = auth_func({'Content-Type' : 'text/xml' })
     post_url = "{}/createView?name={}".format(jenkins_url, view_name)
-    r = requests.post(post_url, headers=headers, data=view_config)
+    r = requests.post(post_url, headers=headers, data=view_config, verify=False)
 
 def trigger_build(jenkins_url, job_name, parameter_string = None):
     log ("Triggering build {}.".format(job_name))
@@ -173,22 +173,22 @@ def trigger_build(jenkins_url, job_name, parameter_string = None):
         post_url = "{}/job/{}/buildWithParameters?{}".format(jenkins_url, job_name, parameter_string)
     else:
         post_url = "{}/job/{}/build".format(jenkins_url, job_name)
-    r = requests.post(post_url, headers=auth_func({}))
+    r = requests.post(post_url, headers=auth_func({}), verify=False)
 
 def delete_credentials(jenkins_url, credential_name):
     log ("Deleting credentials {}.".format(credential_name))
     post_url = "{}/credential-store/domain/_/credential/{}/doDelete".format(jenkins_url, credential_name)
-    r = requests.post(post_url, headers=auth_func({}))
+    r = requests.post(post_url, headers=auth_func({}), verify=False)
 
 def delete_job(jenkins_url, job_name):
     log ("Deleting job {}.".format(job_name))
     post_url = "{}/job/{}/doDelete".format(jenkins_url, job_name)
-    r = requests.post(post_url, headers=auth_func({}))
+    r = requests.post(post_url, headers=auth_func({}), verify=False)
 
 def delete_view(jenkins_url, view_name):
     log ("Deleting view {}.".format(view_name))
     post_url = "{}/view/{}/doDelete".format(jenkins_url, view_name)
-    r = requests.post(post_url, headers=auth_func({}))
+    r = requests.post(post_url, headers=auth_func({}), verify=False)
 
 def remove_temp_dir():
     shutil.rmtree("tmp", ignore_errors=True)
