@@ -35,6 +35,7 @@ pass or fail. The duration of each job will be between 120 and 240 seconds.
 import dcos
 import os
 import random
+import sys
 
 from docopt import docopt
 from subprocess import call
@@ -48,6 +49,19 @@ def log(message):
 def log_and_exit(message):
     log(message)
     exit(1)
+
+@contextlib.contextmanager
+def stdchannel_redirected(stdchannel, dest_filename):
+    try:
+        oldstdchannel = os.dup(stdchannel.fileno())
+        dest_file = open(dest_filename, 'w')
+        os.dup2(dest_file.fileno(), stdchannel.fileno())
+        yield
+    finally:
+        if oldstdchannel is not None:
+            os.dup2(oldstdchannel, stdchannel.fileno())
+        if dest_file is not None:
+            dest_file.close()
 
 def check_and_set_token():
     dcos_username = arguments['--dcos-username']
@@ -89,40 +103,43 @@ def verify_jenkins(jenkins_url):
 
 def install_marathon_lb(marathon_lb_url):
     log("installing marathon-lb")
-    install_package_and_wait('marathon-lb')
-    assert package_installed('marathon-lb'), log_and_exit('!! package failed to install')
-    log("waiting for marathon-lb service to come up at '{}'".format(marathon_lb_url))
-    end_time = time.time() + 300
-    while time.time() < end_time:
-        if verify_marathon_lb(marathon_lb_url):
-            break
-        time.sleep(1)
+    with stdchannel_redirected(sys.stdout, os.devnull):
+        run_dcos_command('marathon app add conf/get_sa.json')
+        end_time = time.time() + 300
+        while time.time() < end_time:
+            if get_marathon_task('saread'):
+                break
+            time.sleep(1)
+        log("retrieving service account JSON")
+        satoken = run_dcos_command("task log --lines=1 saread")[0]
+        run_dcos_command('marathon app remove saread')
+    post_url = "{}secrets/v1/secret/default/marathon-lb".format(dcos_url)
+    headers = {'Content-Type': 'application/json'}
+    data = json.dumps({ 'value' : satoken })
+    r = http.put(post_url, headers=headers, data=data)
+    install_package('marathon-lb', None, None, "conf/marathon-lb.json")
 
 def verify_marathon_lb(marathon_lb_url):
-    try:
-        r = http.get(marathon_lb_url)
-        if r.status_code == 200 and r.text:
-            log("marathon-lb is up and running yo")
-            return True
-    except:
-        return False
+    with stdchannel_redirected(sys.stderr, os.devnull):
+        try:
+            r = http.get(marathon_lb_url)
+            if r.status_code == 200 and r.text:
+                log("marathon-lb is up and running")
+                return True
+        except:
+            return False
 
 def strip_to_hostname(url):
     parsed_url = urlparse(url)
     return parsed_url.netloc
 
-def update_marathon_json(elb_url):
-    with open('marathon.json', 'r+') as f:
-        marathon = json.load(f)
-        marathon['labels']['HAPROXY_0_VHOST'] = elb_url
-        f.seek(0)
-        f.truncate()
-        json.dump(marathon, f, indent=4, sort_keys=True, separators=(',', ': '))
-
 def update_and_push_marathon_json(elb_url, branch):
     elb_hostname = strip_to_hostname(elb_url)
-    update_marathon_json(elb_hostname)
-    if call(['git', 'commit', '-a', '-m', 'Update marathon.json with ELB URL']) != 0:
+    with open("conf/cd-demo-app.json") as options_file:
+        app_config = options_file.read().replace("ELB_HOSTNAME", elb_hostname)
+    with open("marathon.json", "w") as options_file:
+        options_file.write(app_config)
+    if call(['git', 'commit', '-a', '-m', 'Update marathon.json with ELB hostname']) != 0:
         log_and_exit("!! failed to commit updated marathon.json")
     if call(['git', 'push', 'origin', branch]) != 0:
         log_and_exit("!! failed to push updated marathon.json")
@@ -250,10 +267,10 @@ if __name__ == "__main__":
             org = arguments['--org']
             username = arguments['--username']
             password = arguments['--password']
-#            if not verify_marathon_lb(elb_url):
-#                log("couldn't find marathon-lb running at '{}'".format(elb_url))
-#                install_marathon_lb(elb_url)
-#            update_and_push_marathon_json(elb_url, branch)
+            if not verify_marathon_lb(elb_url):
+                log("couldn't find marathon-lb running at '{}'".format(elb_url))
+                install_marathon_lb(elb_url)
+            update_and_push_marathon_json(elb_url, branch)
             demo_pipeline(jenkins_url, elb_url, jenkins_name, branch, org, username, password)
         elif arguments['dynamic-slaves']:
             demo_dynamic_slaves(jenkins_url, builds)
