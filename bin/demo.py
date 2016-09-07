@@ -70,7 +70,8 @@ def check_and_set_token():
         token = shakedown.authenticate(dcos_username, dcos_password)
         dcos.config.set_val('core.dcos_acs_token', token)
     except:
-        log_and_exit('!! authentication failed')
+        log_and_exit('!! DC/OS authentication failed; ' +
+            'did you provide --dcos-username and --dcos-password?')
 
 def config_dcos_cli(dcos_url):
     dcos.config.set_val('core.dcos_url', dcos_url)
