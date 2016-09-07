@@ -54,8 +54,13 @@ node {
 
     // Deploy
     stage 'Deploy'
-    sh "cat marathon.json | jq \".container.docker.image = \\\"mesosphere/cd-demo-app:${gitCommit()}\\\" | .id = \\\"jenkins-deployed-app\\\" | .labels.lastChangedBy = \\\"${gitEmail()}\\\" \" > marathon-rendered.json"
-    sh "curl -X PUT http://marathon.mesos:8080/v2/apps/jenkins-deployed-app -d @marathon-rendered.json -H \"Content-type: application/json\""
+    sh "cat marathon.json | jq \".container.docker.image = \\\"mesosphere/cd-demo-app:${gitCommit()}\\\" | .id = \\\"jenkins-deployed-app\\\" | .labels.lastChangedBy = \\\"${gitEmail()}\\\"\" > marathon-rendered.json"
+    marathon(
+        url: 'http://marathon.mesos:8080',
+        forceUpdate: false,
+        credentialsId: 'dcos-token',
+        filename: 'marathon-rendered.json'
+    )
 
 
     // Clean up

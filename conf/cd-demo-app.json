@@ -13,16 +13,6 @@
         "type": "DOCKER"
     },
     "cpus": 0.1,
-    "healthChecks": [
-        {
-            "gracePeriodSeconds": 600,
-            "intervalSeconds": 30,
-            "maxConsecutiveFailures": 2,
-            "portIndex": 0,
-            "protocol": "TCP",
-            "timeoutSeconds": 10
-        }
-    ],
     "id": "cd-demo-app",
     "instances": 1,
     "labels": {

@@ -183,6 +183,23 @@ def create_credentials(jenkins_url, credential_name, username, password):
     except:
         log("!! failed to create credentials '{}'".format(credential_name))
 
+def create_credentials_text(jenkins_url, credential_name, text):
+    log("creating credentials '{}'".format(credential_name))
+    credential = { 'credentials' : {
+        'scope' : 'GLOBAL',
+        'id' : credential_name,
+        'secret' : text,
+        'description' : credential_name,
+        '$class' : 'org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl'
+    } }
+    data = { 'json' : json.dumps(credential) }
+    post_url = "{}/credentials/store/system/domain/_/createCredentials".format(jenkins_url)
+    try:
+        r = http.post(post_url, data=data)
+    except:
+        log("!! failed to create credentials '{}'".format(credential_name))
+
+
 def delete_credentials(jenkins_url, credential_name):
     log("deleting credentials '{}'".format(credential_name))
     post_url = "{}/credentials/store/system/domain/_/credential/{}/doDelete".format(jenkins_url, credential_name)
@@ -211,6 +228,8 @@ def delete_job(jenkins_url, job_name):
 def demo_pipeline(jenkins_url, elb_url, name, branch, org, username, password):
     log("creating demo pipeline (workflow)")
     create_credentials(jenkins_url, 'docker-hub-credentials', username, password)
+    token = run_dcos_command("config show core.dcos_acs_token")[0].strip()
+    create_credentials_text(jenkins_url, 'dcos-token', token)
     with open("jobs/pipeline-demo/config.xml") as build_job:
         job_config = build_job.read().replace("GIT_BRANCH", branch)
         job_config = job_config.replace("DOCKER_HUB_ORG", org)
@@ -236,6 +255,7 @@ def demo_dynamic_slaves(jenkins_url, builds):
 def cleanup_pipeline_jobs(jenkins_url):
     log("cleaning up demo pipeline")
     delete_credentials(jenkins_url, "docker-hub-credentials")
+    delete_credentials(jenkins_url, "dcos-token")
     delete_job(jenkins_url, "pipeline-demo")
 
 def cleanup_dynamic_slaves_jobs(jenkins_url, builds):
