@@ -147,7 +147,9 @@ def update_and_push_marathon_json(elb_url, branch):
         app_config = options_file.read().replace("ELB_HOSTNAME", elb_hostname)
     with open("marathon.json", "w") as options_file:
         options_file.write(app_config)
-    if call(['git', 'commit', '-a', '-m', 'Update marathon.json with ELB hostname']) != 0:
+    if call(['git', 'add', 'marathon.json']) != 0:
+        log_and_exit("!! failed to add marathon.json to git repo")
+    if call(['git', 'commit', 'marathon.json', '-m', 'Update marathon.json with ELB hostname']) != 0:
         log_and_exit("!! failed to commit updated marathon.json")
     if call(['git', 'push', 'origin', branch]) != 0:
         log_and_exit("!! failed to push updated marathon.json")
