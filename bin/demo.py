@@ -117,6 +117,13 @@ def install_marathon_lb(marathon_lb_url):
     post_url = "{}secrets/v1/secret/default/marathon-lb".format(dcos_url)
     headers = {'Content-Type': 'application/json'}
     data = json.dumps({ 'value' : satoken })
+    try:
+        r = http.get(post_url)
+        if r.status_code == 200:
+            log("removing old marathon-lb secret key")
+            http.delete(post_url)
+    except:
+        pass
     r = http.put(post_url, headers=headers, data=data)
     install_package('marathon-lb', None, None, "conf/marathon-lb.json")
 
