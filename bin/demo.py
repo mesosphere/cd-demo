@@ -9,14 +9,15 @@ Usage:
     demo.py uninstall [options] <dcos_url>
 
 Options:
-    --name <name>           Jenkins instance name to use [default: jenkins]
-    --branch <branch>       Git branch for continuous delivery demo
-    --org <org>             Docker Hub organisation [default: mesosphere]
-    --username <user>       Docker Hub username [default: cddemo]
-    --password <pass>       Docker Hub password
-    --dcos-username <user>  DC/OS auth username [default: bootstrapuser]
-    --dcos-password <pass>  DC/OS auth password [default: deleteme]
-    --builds <n>            Number of builds to create [default: 50]
+    --name <name>               Jenkins instance name to use [default: jenkins]
+    --branch <branch>           Git branch for continuous delivery demo
+    --org <org>                 Docker Hub organisation [default: mesosphere]
+    --username <user>           Docker Hub username [default: cddemo]
+    --password <pass>           Docker Hub password
+    --dcos-username <user>      DC/OS auth username [default: bootstrapuser]
+    --dcos-password <pass>      DC/OS auth password [default: deleteme]
+    --dcos-oauth-token <token>  DC/OS OAuth token (required for OpenDC/OS)
+    --builds <n>                Number of builds to create [default: 50]
 
 This script is used to demonstrate various features of Jenkins on the DC/OS.
 
@@ -63,15 +64,26 @@ def stdchannel_redirected(stdchannel, dest_filename):
         if dest_file is not None:
             dest_file.close()
 
-def check_and_set_token():
+def check_and_set_token(dcos_url):
     dcos_username = arguments['--dcos-username']
     dcos_password = arguments['--dcos-password']
+    dcos_oauth_token = arguments['--dcos-oauth-token']
     try:
         token = shakedown.authenticate(dcos_username, dcos_password)
         dcos.config.set_val('core.dcos_acs_token', token)
     except:
-        log_and_exit('!! DC/OS authentication failed; ' +
-            'did you provide --dcos-username and --dcos-password?')
+        if dcos_oauth_token:
+            url = dcos_url + 'acs/api/v1/auth/login'
+            creds = { 'token' : dcos_oauth_token }
+            r = http.request('post', url, json=creds)
+            if r.status_code == 200:
+                dcos.config.set_val('core.dcos_acs_token', r.json()['token'])
+            else:
+                log_and_exit('!! DC/OS authentication failed; ' +
+                    'invalid --dcos-oauth-token provided')
+        else:
+            log_and_exit('!! DC/OS authentication failed; ' +
+                'did you provide --dcos-username and --dcos-password or --dcos-oauth-token?')
 
 def config_dcos_cli(dcos_url):
     dcos.config.set_val('core.dcos_url', dcos_url)
@@ -104,6 +116,14 @@ def verify_jenkins(jenkins_url):
 
 def install_marathon_lb(marathon_lb_url):
     log("installing marathon-lb")
+    dcos_oauth_token = arguments['--dcos-oauth-token']
+    if dcos_oauth_token:
+        install_package('marathon-lb')
+    else:
+        install_marathon_lb_secret(marathon_lb_url)
+        install_package('marathon-lb', None, None, "conf/marathon-lb.json")
+
+def install_marathon_lb_secret(marathon_lb_url):
     with stdchannel_redirected(sys.stdout, os.devnull):
         run_dcos_command('marathon app add conf/get_sa.json')
         end_time = time.time() + 300
@@ -126,7 +146,6 @@ def install_marathon_lb(marathon_lb_url):
     except:
         pass
     r = http.put(post_url, headers=headers, data=data)
-    install_package('marathon-lb', None, None, "conf/marathon-lb.json")
 
 def verify_marathon_lb(marathon_lb_url):
     with stdchannel_redirected(sys.stderr, os.devnull):
@@ -284,7 +303,7 @@ if __name__ == "__main__":
     jenkins_url = '{}service/{}/'.format(dcos_url, jenkins_name)
 
     config_dcos_cli(dcos_url)
-    check_and_set_token()
+    check_and_set_token(dcos_url)
 
     try:
         if arguments['install']:
