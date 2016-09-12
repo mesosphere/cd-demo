@@ -87,13 +87,16 @@ def authenticate_with_oauth(dcos_url, dcos_oauth_token):
         log_and_exit('!! DC/OS authentication failed; ' +
             'invalid --dcos-oauth-token provided')
 
+def authenticate_with_username():
+    dcos_username = arguments['--dcos-username']
+    dcos_password = arguments['--dcos-password']
+    token = shakedown.authenticate(dcos_username, dcos_password)
+    dcos.config.set_val('core.dcos_acs_token', token)
+
 def check_and_set_token(dcos_url):
     if needs_authentication():
         try:
-            dcos_username = arguments['--dcos-username']
-            dcos_password = arguments['--dcos-password']
-            token = shakedown.authenticate(dcos_username, dcos_password)
-            dcos.config.set_val('core.dcos_acs_token', token)
+            authenticate_with_username()
         except:
             dcos_oauth_token = arguments['--dcos-oauth-token']
             if dcos_oauth_token:
@@ -132,13 +135,16 @@ def verify_jenkins(jenkins_url):
         return False
 
 def install_marathon_lb(marathon_lb_url):
-    log("installing marathon-lb")
-    dcos_oauth_token = arguments['--dcos-oauth-token']
-    if dcos_oauth_token:
-        install_package('marathon-lb')
+    if not shakedown.package_installed("marathon-lb"):
+        log("installing marathon-lb")
+        try:
+            authenticate_with_username() # test to see if we're on Enterprise DC/OS
+            install_marathon_lb_secret(marathon_lb_url)
+            install_package('marathon-lb', None, None, "conf/marathon-lb.json")
+        except:
+            install_package('marathon-lb')
     else:
-        install_marathon_lb_secret(marathon_lb_url)
-        install_package('marathon-lb', None, None, "conf/marathon-lb.json")
+        log("marathon-lb is already installed")
 
 def install_marathon_lb_secret(marathon_lb_url):
     with stdchannel_redirected(sys.stdout, os.devnull):
@@ -163,16 +169,6 @@ def install_marathon_lb_secret(marathon_lb_url):
     except:
         pass
     r = http.put(post_url, headers=headers, data=data)
-
-def verify_marathon_lb(marathon_lb_url):
-    with stdchannel_redirected(sys.stderr, os.devnull):
-        try:
-            r = http.get(marathon_lb_url)
-            if r.status_code == 200 and r.text:
-                log("marathon-lb is up and running")
-                return True
-        except:
-            return False
 
 def strip_to_hostname(url):
     parsed_url = urlparse(url)
@@ -338,9 +334,7 @@ if __name__ == "__main__":
             org = arguments['--org']
             username = arguments['--username']
             password = arguments['--password']
-            if not verify_marathon_lb(elb_url):
-                log("couldn't find marathon-lb running at '{}'".format(elb_url))
-                install_marathon_lb(elb_url)
+            install_marathon_lb(elb_url)
             update_and_push_marathon_json(elb_url, branch)
             demo_pipeline(jenkins_url, elb_url, jenkins_name, branch, org, username, password)
         elif arguments['dynamic-slaves']:
