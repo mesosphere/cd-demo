@@ -63,26 +63,44 @@ def stdchannel_redirected(stdchannel, dest_filename):
         if dest_file is not None:
             dest_file.close()
 
-def check_and_set_token(dcos_url):
-    dcos_username = arguments['--dcos-username']
-    dcos_password = arguments['--dcos-password']
+def needs_authentication():
+    token = dcos.config.get_config_val("core.dcos_acs_token")
+    if token is None:
+        # need to check if token is set because the CLI code will prompt for auth otherwise
+        return True
+    else:
+        try:
+            # make a request that requires authentication
+            shakedown.dcos_leader()
+            return False
+        except dcos.errors.DCOSException:
+            return True
+
+def authenticate_with_oauth(dcos_url, dcos_oauth_token):
     dcos_oauth_token = arguments['--dcos-oauth-token']
-    try:
-        token = shakedown.authenticate(dcos_username, dcos_password)
-        dcos.config.set_val('core.dcos_acs_token', token)
-    except:
-        if dcos_oauth_token:
-            url = dcos_url + 'acs/api/v1/auth/login'
-            creds = { 'token' : dcos_oauth_token }
-            r = http.request('post', url, json=creds)
-            if r.status_code == 200:
-                dcos.config.set_val('core.dcos_acs_token', r.json()['token'])
+    url = dcos_url + 'acs/api/v1/auth/login'
+    creds = { 'token' : dcos_oauth_token }
+    r = http.request('post', url, json=creds)
+    if r.status_code == 200:
+        dcos.config.set_val('core.dcos_acs_token', r.json()['token'])
+    else:
+        log_and_exit('!! DC/OS authentication failed; ' +
+            'invalid --dcos-oauth-token provided')
+
+def check_and_set_token(dcos_url):
+    if needs_authentication():
+        try:
+            dcos_username = arguments['--dcos-username']
+            dcos_password = arguments['--dcos-password']
+            token = shakedown.authenticate(dcos_username, dcos_password)
+            dcos.config.set_val('core.dcos_acs_token', token)
+        except:
+            dcos_oauth_token = arguments['--dcos-oauth-token']
+            if dcos_oauth_token:
+                authenticate_with_oauth(dcos_url, dcos_oauth_token)
             else:
                 log_and_exit('!! DC/OS authentication failed; ' +
-                    'invalid --dcos-oauth-token provided')
-        else:
-            log_and_exit('!! DC/OS authentication failed; ' +
-                'did you provide --dcos-username and --dcos-password or --dcos-oauth-token?')
+                    'did you provide --dcos-username and --dcos-password or --dcos-oauth-token?')
 
 def config_dcos_cli(dcos_url):
     dcos.config.set_val('core.dcos_url', dcos_url)
