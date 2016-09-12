@@ -9,17 +9,17 @@ Running the `pipeline` command will:
 
 2. Sets up a Jenkins "workflow" pipeline job and the necessary credentials to demonstrate a basic continuous delivery pipeline.  Jenkins will:
 
-    + Spin up a new Jenkins slave using the Mesos plugin. This slave runs inside a Docker container on one of our DC/OS agents.
+    + Spin up a new Jenkins agent using the Mesos plugin. This agent runs inside a Docker container on one of our DC/OS agents.
     + Clone the git repository
     + Build a Docker container based off the [Jekyll Docker image](https://hub.docker.com/r/jekyll/jekyll/) that includes the content stored in [/site](/site) and push it to DockerHub.
     + Run the newly created container and a [Linkchecker container](https://github.com/mesosphere/docker-containers/blob/master/utils/linkchecker/Dockerfile) that runs a basic integration test against the container, checking that the webserver comes up correctly and that all links being served are valid (i.e. no 404s).
     + Manually trigger a Marathon deployment of the newly created container to the DC/OS base Marathon instance. If the application already exists, Marathon will simply upgrade it.
-    + Make the application available on a public slave at port 80 using Marathon-lb.
+    + Make the application available on a public agent at port 80 using Marathon-lb.
 
-When run with the `dynamic-slaves` command, it will:
+When run with the `dynamic-agents` command, it will:
 
 3. Creates 50 build jobs that take a random amount of time between 1 and 2 minutes. These jobs will randomly fail.
-    + The Mesos plugin will spin up build slaves on demand for these jobs, using as much capacity as your cluster has available.
+    + The Mesos plugin will spin up build agents on demand for these jobs, using as much capacity as your cluster has available.
     + When these jobs are finished, the Jenkins tasks will terminate and the resources will be relinquished back to other users of your cluster.
 
 When run with the `uninstall` command, it will:
@@ -69,7 +69,7 @@ When run with the `uninstall` command, it will:
 
     NOTE: You must use the domain name for your cluster; the IP address will fail.
 
-2. You can now run either the pipeline demo or the dynamic slaves demo. To run the pipeline demo, you will also need to specify the ELB address (`Public Slave`):
+2. You can now run either the pipeline demo or the dynamic agents demo. To run the pipeline demo, you will also need to specify the ELB address (`Public Agent`):
 
     ```
     python bin/demo.py pipeline  --password=$PASSWORD http://my.elb/ http://my.dcos.cluster/
@@ -85,13 +85,13 @@ When run with the `uninstall` command, it will:
 
 ![deployed-app](/img/deployed-jekyll-app.png)
 
-7. Now let's run the dynamic slaves demo. It will create 50 jobs that will randomly fail.
+7. Now let's run the dynamic agents demo. It will create 50 jobs that will randomly fail.
 
     ```
-    python bin/demo.py dynamic-slaves http://my.dcos.cluster/
+    python bin/demo.py dynamic-agents http://my.dcos.cluster/
     ```
 
-8. Navigate back to the Jenkins and/or DC/OS UI to show build slaves spinning up manually.
+8. Navigate back to the Jenkins and/or DC/OS UI to show build agents spinning up manually.
 
 ### Uninstalling
 
@@ -144,7 +144,7 @@ By default, this script assumes you will be pushing to the [mesosphere/cd-demo-a
 
 ### Demonstrating Multi-tenancy
 
-To demonstrate how you can install multiple Jenkins instances side by side on DC/OS, simply give your Jenkins instances unique names using the `--name` argument and run the demo as follows. Note that if you only have one public slave, you will not be able to deploy applications from multiple pipelines (each application requires port 80).
+To demonstrate how you can install multiple Jenkins instances side by side on DC/OS, simply give your Jenkins instances unique names using the `--name` argument and run the demo as follows. Note that if you only have one public agent, you will not be able to deploy applications from multiple pipelines (each application requires port 80).
 
 1. Create one instance:
 
