@@ -10,7 +10,6 @@ Usage:
 
 Options:
     --name <name>               Jenkins instance name to use [default: jenkins]
-    --branch <branch>           Git branch for continuous delivery demo
     --org <org>                 Docker Hub organisation [default: mesosphere]
     --username <user>           Docker Hub username [default: cddemo]
     --password <pass>           Docker Hub password
@@ -160,6 +159,10 @@ def verify_marathon_lb(marathon_lb_url):
 def strip_to_hostname(url):
     parsed_url = urlparse(url)
     return parsed_url.netloc
+
+def get_branch():
+    branch = subprocess.check_output(['git','rev-parse', '--abbrev-ref', 'HEAD'])
+    return str(branch, 'utf-8').strip()
 
 def update_and_push_marathon_json(elb_url, branch):
     elb_hostname = strip_to_hostname(elb_url)
@@ -311,7 +314,7 @@ if __name__ == "__main__":
                 log("couldn't find Jenkins running at '{}'".format(jenkins_url))
                 install_jenkins(jenkins_name, jenkins_url)
         elif arguments['pipeline']:
-            branch = arguments['--branch'].lower()
+            branch = get_branch()
             if branch == 'master':
                 log_and_exit("!! cannot run demo against the master branch.")
             org = arguments['--org']
