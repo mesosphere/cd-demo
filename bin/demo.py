@@ -185,11 +185,11 @@ def update_and_push_marathon_json(elb_url, branch):
     with open("marathon.json", "w") as options_file:
         options_file.write(app_config)
     if call(['git', 'add', 'marathon.json']) != 0:
-        log_and_exit("!! failed to add marathon.json to git repo")
+        log("!! failed to add marathon.json to git repo")
     if call(['git', 'commit', 'marathon.json', '-m', 'Update marathon.json with ELB hostname']) != 0:
-        log_and_exit("!! failed to commit updated marathon.json")
+        log("!! failed to commit updated marathon.json")
     if call(['git', 'push', 'origin', branch]) != 0:
-        log_and_exit("!! failed to push updated marathon.json")
+        log("!! failed to push updated marathon.json")
     log("updated marathon.json with ELB hostname '{}'".format(elb_hostname))
 
 def trigger_build(jenkins_url, job_name, parameter_string = None):
