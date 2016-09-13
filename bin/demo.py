@@ -96,14 +96,18 @@ def authenticate_with_oauth(dcos_url):
 def authenticate_with_username():
     dcos_username = arguments['--dcos-username']
     dcos_password = arguments['--dcos-password']
-    token = shakedown.authenticate(dcos_username, dcos_password)
-    dcos.config.set_val('core.dcos_acs_token', token)
+    try:
+        token = shakedown.authenticate(dcos_username, dcos_password)
+        dcos.config.set_val('core.dcos_acs_token', token)
+    except:
+        log_and_exit('!! DC/OS authentication failed; ' +
+                'invalid --dcos-username and --dcos-password provided')
+
 
 def check_and_set_token(dcos_url):
     if needs_authentication():
-        dcos_oauth_token = arguments['--dcos-oauth-token']
-        if dcos_oauth_token:
-            authenticate_with_oauth(dcos_url, dcos_oauth_token)
+        if '--dcos-oauth-token' in arguments:
+            authenticate_with_oauth(dcos_url)
         else:
             authenticate_with_username()
         if needs_authentication():
