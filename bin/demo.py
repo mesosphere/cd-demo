@@ -43,6 +43,9 @@ from urllib.parse import urlparse
 
 from shakedown import *
 
+jenkins_version = "2.0.0-2.7.2"
+marathon_lb_version="1.3.5"
+
 def log(message):
     print("[demo]: {}".format(message))
 
@@ -115,7 +118,7 @@ def install_jenkins(jenkins_name, jenkins_url):
         package_config = options_file.read().replace("JENKINS_NAME", jenkins_name)
     with open("jenkins_config.json", "w") as options_file:
         options_file.write(package_config)
-    install_package('jenkins', None, jenkins_name, "jenkins_config.json")
+    install_package('jenkins', jenkins_version, jenkins_name, "jenkins_config.json")
     os.remove("jenkins_config.json")
     assert package_installed('jenkins', jenkins_name), log_and_exit('!! package failed to install')
     log("waiting for Jenkins service to come up at '{}'".format(jenkins_url))
@@ -140,9 +143,9 @@ def install_marathon_lb(marathon_lb_url):
         try:
             authenticate_with_username() # test to see if we're on Enterprise DC/OS
             install_marathon_lb_secret(marathon_lb_url)
-            install_package('marathon-lb', None, None, "conf/marathon-lb.json")
+            install_package('marathon-lb', marathon_lb_version, None, None, "conf/marathon-lb.json")
         except:
-            install_package('marathon-lb')
+            install_package('marathon-lb', marathon_lb_version)
     else:
         log("marathon-lb is already installed")
 
