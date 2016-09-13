@@ -9,14 +9,14 @@ Usage:
     demo.py uninstall [options] <dcos_url>
 
 Options:
-    --name <name>           Jenkins instance name to use [default: jenkins]
-    --branch <branch>       Git branch for continuous delivery demo
-    --org <org>             Docker Hub organisation [default: mesosphere]
-    --username <user>       Docker Hub username [default: cddemo]
-    --password <pass>       Docker Hub password
-    --dcos-username <user>  DC/OS auth username [default: bootstrapuser]
-    --dcos-password <pass>  DC/OS auth password [default: deleteme]
-    --builds <n>            Number of builds to create [default: 50]
+    --name <name>               Jenkins instance name to use [default: jenkins]
+    --org <org>                 Docker Hub organisation [default: mesosphere]
+    --username <user>           Docker Hub username [default: cddemo]
+    --password <pass>           Docker Hub password
+    --dcos-username <user>      DC/OS auth username [default: bootstrapuser]
+    --dcos-password <pass>      DC/OS auth password [default: deleteme]
+    --dcos-oauth-token <token>  DC/OS OAuth token (required for OpenDC/OS)
+    --builds <n>                Number of builds to create [default: 50]
 
 This script is used to demonstrate various features of Jenkins on the DC/OS.
 
@@ -43,6 +43,9 @@ from urllib.parse import urlparse
 
 from shakedown import *
 
+jenkins_version = "2.0.0-2.7.2"
+marathon_lb_version="1.3.5"
+
 def log(message):
     print("[demo]: {}".format(message))
 
@@ -63,7 +66,34 @@ def stdchannel_redirected(stdchannel, dest_filename):
         if dest_file is not None:
             dest_file.close()
 
-def check_and_set_token():
+def needs_authentication():
+    token = dcos.config.get_config_val("core.dcos_acs_token")
+    if token is None:
+        # need to check if token is set because the CLI code will prompt for auth otherwise
+        return True
+    else:
+        try:
+            # make a request that requires authentication
+            shakedown.dcos_leader()
+            return False
+        except dcos.errors.DCOSException:
+            return True
+
+def authenticate_with_oauth(dcos_url):
+    dcos_oauth_token = arguments['--dcos-oauth-token']
+    url = dcos_url + 'acs/api/v1/auth/login'
+    creds = { 'token': dcos_oauth_token }
+    r = http.request('post', url, json=creds)
+    if r.status_code == 200:
+        json_data = r.json()
+        if 'token' not in json_data:
+            log_and_exit('!! token not returned from authentication request; is DC/OS healthy?')
+        dcos.config.set_val('core.dcos_acs_token', json_data['token'])
+    else:
+        log_and_exit('!! DC/OS authentication failed; ' +
+            'invalid --dcos-oauth-token provided')
+
+def authenticate_with_username():
     dcos_username = arguments['--dcos-username']
     dcos_password = arguments['--dcos-password']
     try:
@@ -71,7 +101,18 @@ def check_and_set_token():
         dcos.config.set_val('core.dcos_acs_token', token)
     except:
         log_and_exit('!! DC/OS authentication failed; ' +
-            'did you provide --dcos-username and --dcos-password?')
+                'invalid --dcos-username and --dcos-password provided')
+
+
+def check_and_set_token(dcos_url):
+    if needs_authentication():
+        if '--dcos-oauth-token' in arguments:
+            authenticate_with_oauth(dcos_url)
+        else:
+            authenticate_with_username()
+        if needs_authentication():
+            log_and_exit('!! DC/OS authentication failed; ' +
+                'did you provide --dcos-username and --dcos-password or --dcos-oauth-token?')
 
 def config_dcos_cli(dcos_url):
     dcos.config.set_val('core.dcos_url', dcos_url)
@@ -83,7 +124,7 @@ def install_jenkins(jenkins_name, jenkins_url):
         package_config = options_file.read().replace("JENKINS_NAME", jenkins_name)
     with open("jenkins_config.json", "w") as options_file:
         options_file.write(package_config)
-    install_package('jenkins', None, jenkins_name, "jenkins_config.json")
+    install_package('jenkins', jenkins_version, jenkins_name, "jenkins_config.json")
     os.remove("jenkins_config.json")
     assert package_installed('jenkins', jenkins_name), log_and_exit('!! package failed to install')
     log("waiting for Jenkins service to come up at '{}'".format(jenkins_url))
@@ -103,7 +144,18 @@ def verify_jenkins(jenkins_url):
         return False
 
 def install_marathon_lb(marathon_lb_url):
-    log("installing marathon-lb")
+    if not shakedown.package_installed("marathon-lb"):
+        log("installing marathon-lb")
+        try:
+            authenticate_with_username() # test to see if we're on Enterprise DC/OS
+            install_marathon_lb_secret(marathon_lb_url)
+            install_package('marathon-lb', marathon_lb_version, None, "conf/marathon-lb.json")
+        except:
+            install_package('marathon-lb', marathon_lb_version)
+    else:
+        log("marathon-lb is already installed")
+
+def install_marathon_lb_secret(marathon_lb_url):
     with stdchannel_redirected(sys.stdout, os.devnull):
         run_dcos_command('marathon app add conf/get_sa.json')
         end_time = time.time() + 300
@@ -126,21 +178,14 @@ def install_marathon_lb(marathon_lb_url):
     except:
         pass
     r = http.put(post_url, headers=headers, data=data)
-    install_package('marathon-lb', None, None, "conf/marathon-lb.json")
-
-def verify_marathon_lb(marathon_lb_url):
-    with stdchannel_redirected(sys.stderr, os.devnull):
-        try:
-            r = http.get(marathon_lb_url)
-            if r.status_code == 200 and r.text:
-                log("marathon-lb is up and running")
-                return True
-        except:
-            return False
 
 def strip_to_hostname(url):
     parsed_url = urlparse(url)
     return parsed_url.netloc
+
+def get_branch():
+    branch = subprocess.check_output(['git','rev-parse', '--abbrev-ref', 'HEAD'])
+    return str(branch, 'utf-8').strip()
 
 def update_and_push_marathon_json(elb_url, branch):
     elb_hostname = strip_to_hostname(elb_url)
@@ -149,11 +194,11 @@ def update_and_push_marathon_json(elb_url, branch):
     with open("marathon.json", "w") as options_file:
         options_file.write(app_config)
     if call(['git', 'add', 'marathon.json']) != 0:
-        log_and_exit("!! failed to add marathon.json to git repo")
+        log("!! failed to add marathon.json to git repo")
     if call(['git', 'commit', 'marathon.json', '-m', 'Update marathon.json with ELB hostname']) != 0:
-        log_and_exit("!! failed to commit updated marathon.json")
+        log("!! failed to commit updated marathon.json")
     if call(['git', 'push', 'origin', branch]) != 0:
-        log_and_exit("!! failed to push updated marathon.json")
+        log("!! failed to push updated marathon.json")
     log("updated marathon.json with ELB hostname '{}'".format(elb_hostname))
 
 def trigger_build(jenkins_url, job_name, parameter_string = None):
@@ -265,8 +310,12 @@ def cleanup_dynamic_slaves_jobs(jenkins_url, builds):
         job_name = "demo-job-{0:02d}".format(i)
         delete_job(jenkins_url, job_name)
 
+def cleanup_deployed_app():
+    dcos.marathon.create_client().remove_app('jenkins-deployed-app', force=True)
+
 def cleanup(jenkins_url, builds):
     cleanup_pipeline_jobs(jenkins_url)
+    cleanup_deployed_app()
     cleanup_dynamic_slaves_jobs(jenkins_url, builds)
 
 def uninstall(jenkins_name):
@@ -284,7 +333,7 @@ if __name__ == "__main__":
     jenkins_url = '{}service/{}/'.format(dcos_url, jenkins_name)
 
     config_dcos_cli(dcos_url)
-    check_and_set_token()
+    check_and_set_token(dcos_url)
 
     try:
         if arguments['install']:
@@ -292,15 +341,13 @@ if __name__ == "__main__":
                 log("couldn't find Jenkins running at '{}'".format(jenkins_url))
                 install_jenkins(jenkins_name, jenkins_url)
         elif arguments['pipeline']:
-            branch = arguments['--branch'].lower()
+            branch = get_branch()
             if branch == 'master':
                 log_and_exit("!! cannot run demo against the master branch.")
             org = arguments['--org']
             username = arguments['--username']
             password = arguments['--password']
-            if not verify_marathon_lb(elb_url):
-                log("couldn't find marathon-lb running at '{}'".format(elb_url))
-                install_marathon_lb(elb_url)
+            install_marathon_lb(elb_url)
             update_and_push_marathon_json(elb_url, branch)
             demo_pipeline(jenkins_url, elb_url, jenkins_name, branch, org, username, password)
         elif arguments['dynamic-slaves']:

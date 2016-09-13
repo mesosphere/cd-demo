@@ -54,12 +54,15 @@ node {
 
     // Deploy
     stage 'Deploy'
-    sh "cat marathon.json | jq \".container.docker.image = \\\"mesosphere/cd-demo-app:${gitCommit()}\\\" | .id = \\\"jenkins-deployed-app\\\" | .labels.lastChangedBy = \\\"${gitEmail()}\\\"\" > marathon-rendered.json"
+
     marathon(
         url: 'http://marathon.mesos:8080',
         forceUpdate: false,
         credentialsId: 'dcos-token',
-        filename: 'marathon-rendered.json'
+        filename: 'marathon.json',
+        appid: 'jenkins-deployed-app',
+        docker: "mesosphere/cd-demo-app:${gitCommit()}".toString(),
+        labels: ['lastChangedBy': "${gitEmail()}".toString()]
     )
 
 

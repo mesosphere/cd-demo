@@ -69,10 +69,10 @@ When run with the `uninstall` command, it will:
 
     NOTE: You must use the domain name for your cluster; the IP address will fail.
 
-2. You can now run either the pipeline demo or the dynamic slaves demo. To run the pipeline demo, grab the ELB address (`Public Slave`), and make sure to specify the branch to run against:
+2. You can now run either the pipeline demo or the dynamic slaves demo. To run the pipeline demo, you will also need to specify the ELB address (`Public Slave`):
 
     ```
-    python bin/demo.py pipeline --branch=my-demo-branch --password=$PASSWORD http://my.elb/ http://my.dcos.cluster/
+    python bin/demo.py pipeline  --password=$PASSWORD http://my.elb/ http://my.dcos.cluster/
     ```
 
 3. The script will first install Marathon-lb if it looks like it isn't available. It will also update the `marathon.json` in the branch you specified to include the ELB hostname so that Marathon-lb can route to it.
@@ -114,15 +114,15 @@ By default, this script assumes you will be pushing to the [mesosphere/cd-demo-a
 3. Run the pipeline demo, passing in the credentials:
 
     ```
-    python bin/demo.py pipeline --branch=my-demo-branch --org=myorg --username=myuser --password=$PASSWORD http://my.elb/ http://my.dcos.cluster/
+    python bin/demo.py pipeline --org=myorg --username=myuser --password=$PASSWORD http://my.elb/ http://my.dcos.cluster/
     ```
 
 ### Build on Commit
 
-1. Run the demo to completion with the `--branch` parameter to monitor your branch. The pipeline will continue to monitor your branch after the script finishes:
+1. Run the demo to completion. The pipeline will continue to monitor your branch after the script finishes:
 
     ```
-    python bin/demo.py pipeline --branch=my-demo-branch --password=$PASSWORD http://my.elb/ http://my.dcos.cluster/
+    python bin/demo.py pipeline --password=$PASSWORD http://my.elb/ http://my.dcos.cluster/
     ```
 
 3. Create a new blog post with today's date, open it up in your text editor and make whatever changes you'd like to:
@@ -164,6 +164,14 @@ To demonstrate how you can install multiple Jenkins instances side by side on DC
     bin/demo.py uninstall --name=jenkins-1 http://my.dcos.cluster/
     bin/demo.py uninstall --name=jenkins-2 http://my.dcos.cluster/
     ```
+
+### Authentication
+
+The script will check to see if your current machine has a valid `dcos_acs_token` set. If it doesn't:
+
+1. it attempts to authenticate using the default username and password for an Enterprise DC/OS cluster. You can override these using the `--dcos-username` and `--dcos-password` arguments.
+
+2. if this fails, it will attempt to use the `--dcos-oauth-token` arguments to authenticate against an Open DC/OS cluster.
 
 ## TODO
 
