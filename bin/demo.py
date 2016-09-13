@@ -79,13 +79,16 @@ def needs_authentication():
         except dcos.errors.DCOSException:
             return True
 
-def authenticate_with_oauth(dcos_url, dcos_oauth_token):
+def authenticate_with_oauth(dcos_url):
     dcos_oauth_token = arguments['--dcos-oauth-token']
     url = dcos_url + 'acs/api/v1/auth/login'
-    creds = { 'token' : dcos_oauth_token }
+    creds = { 'token': dcos_oauth_token }
     r = http.request('post', url, json=creds)
     if r.status_code == 200:
-        dcos.config.set_val('core.dcos_acs_token', r.json()['token'])
+        json_data = r.json()
+        if 'token' not in json_data:
+            log_and_exit('!! token not returned from authentication request; is DC/OS healthy?')
+        dcos.config.set_val('core.dcos_acs_token', json_data['token'])
     else:
         log_and_exit('!! DC/OS authentication failed; ' +
             'invalid --dcos-oauth-token provided')
@@ -98,15 +101,14 @@ def authenticate_with_username():
 
 def check_and_set_token(dcos_url):
     if needs_authentication():
-        try:
+        dcos_oauth_token = arguments['--dcos-oauth-token']
+        if dcos_oauth_token:
+            authenticate_with_oauth(dcos_url, dcos_oauth_token)
+        else:
             authenticate_with_username()
-        except:
-            dcos_oauth_token = arguments['--dcos-oauth-token']
-            if dcos_oauth_token:
-                authenticate_with_oauth(dcos_url, dcos_oauth_token)
-            else:
-                log_and_exit('!! DC/OS authentication failed; ' +
-                    'did you provide --dcos-username and --dcos-password or --dcos-oauth-token?')
+        if needs_authentication():
+            log_and_exit('!! DC/OS authentication failed; ' +
+                'did you provide --dcos-username and --dcos-password or --dcos-oauth-token?')
 
 def config_dcos_cli(dcos_url):
     dcos.config.set_val('core.dcos_url', dcos_url)
@@ -143,7 +145,7 @@ def install_marathon_lb(marathon_lb_url):
         try:
             authenticate_with_username() # test to see if we're on Enterprise DC/OS
             install_marathon_lb_secret(marathon_lb_url)
-            install_package('marathon-lb', marathon_lb_version, None, None, "conf/marathon-lb.json")
+            install_package('marathon-lb', marathon_lb_version, None, "conf/marathon-lb.json")
         except:
             install_package('marathon-lb', marathon_lb_version)
     else:
