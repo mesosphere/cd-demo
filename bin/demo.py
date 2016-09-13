@@ -301,8 +301,12 @@ def cleanup_dynamic_slaves_jobs(jenkins_url, builds):
         job_name = "demo-job-{0:02d}".format(i)
         delete_job(jenkins_url, job_name)
 
+def cleanup_deployed_app():
+    dcos.marathon.create_client().remove_app('jenkins-deployed-app', force=True)
+
 def cleanup(jenkins_url, builds):
     cleanup_pipeline_jobs(jenkins_url)
+    cleanup_deployed_app()
     cleanup_dynamic_slaves_jobs(jenkins_url, builds)
 
 def uninstall(jenkins_name):
