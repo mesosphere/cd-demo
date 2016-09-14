@@ -64,7 +64,7 @@ When run with the `uninstall` command, it will:
 1. Run the install command. This is mainly a wrapper for the `dcos package install` command but will also check to see if you're authenticated.
 
     ```
-    python bin/demo.py install http://my.dcos.cluster/
+    python3 bin/demo.py install http://my.dcos.cluster/
     ```
 
     NOTE: You must use the domain name for your cluster; the IP address will fail.
@@ -72,7 +72,7 @@ When run with the `uninstall` command, it will:
 2. You can now run either the pipeline demo or the dynamic agents demo. To run the pipeline demo, you will also need to specify the ELB address (`Public Agent`):
 
     ```
-    python bin/demo.py pipeline  --password=$PASSWORD http://my.elb/ http://my.dcos.cluster/
+    python3 bin/demo.py pipeline  --password=$PASSWORD http://my.elb/ http://my.dcos.cluster/
     ```
 
 3. The script will first install Marathon-lb if it looks like it isn't available. It will also update the `marathon.json` in the branch you specified to include the ELB hostname so that Marathon-lb can route to it.
@@ -88,7 +88,7 @@ When run with the `uninstall` command, it will:
 7. Now let's run the dynamic agents demo. It will create 50 jobs that will randomly fail.
 
     ```
-    python bin/demo.py dynamic-agents http://my.dcos.cluster/
+    python3 bin/demo.py dynamic-agents http://my.dcos.cluster/
     ```
 
 8. Navigate back to the Jenkins and/or DC/OS UI to show build agents spinning up manually.
@@ -98,7 +98,7 @@ When run with the `uninstall` command, it will:
 1. Simply run the uninstall command to remove any persisted configuration and to uninstall the DC/OS service itself. This will allow you to run multiple demos on the same cluster but you should recycle clusters if the version of the Jenkins package has changed (to ensure plugins are upgraded):
 
     ```
-    python bin/demo.py uninstall http://my.dcos.cluster/
+    python3 bin/demo.py uninstall http://my.dcos.cluster/
     ```
 
 Alternatively, run the cleanup command instead to just remove jobs and to avoid having to re-install Jenkins.
@@ -114,7 +114,7 @@ By default, this script assumes you will be pushing to the [mesosphere/cd-demo-a
 3. Run the pipeline demo, passing in the credentials:
 
     ```
-    python bin/demo.py pipeline --org=myorg --username=myuser --password=$PASSWORD http://my.elb/ http://my.dcos.cluster/
+    python3 bin/demo.py pipeline --org=myorg --username=myuser --password=$PASSWORD http://my.elb/ http://my.dcos.cluster/
     ```
 
 ### Build on Commit
@@ -122,7 +122,7 @@ By default, this script assumes you will be pushing to the [mesosphere/cd-demo-a
 1. Run the demo to completion. The pipeline will continue to monitor your branch after the script finishes:
 
     ```
-    python bin/demo.py pipeline --password=$PASSWORD http://my.elb/ http://my.dcos.cluster/
+    python3 bin/demo.py pipeline --password=$PASSWORD http://my.elb/ http://my.dcos.cluster/
     ```
 
 3. Create a new blog post with today's date, open it up in your text editor and make whatever changes you'd like to:
@@ -149,20 +149,20 @@ To demonstrate how you can install multiple Jenkins instances side by side on DC
 1. Create one instance:
 
     ```
-    bin/demo.py install --name=jenkins-1 http://my.dcos.cluster/
+    python3 bin/demo.py install --name=jenkins-1 http://my.dcos.cluster/
     ```
 
 2. Open a new terminal tab and create a second instance and so on:
 
     ```
-    bin/demo.py install --name=jenkins-2 http://my.dcos.cluster/
+    python3 bin/demo.py install --name=jenkins-2 http://my.dcos.cluster/
     ```
 
 3. You can uninstall these in the same way:
 
     ```
-    bin/demo.py uninstall --name=jenkins-1 http://my.dcos.cluster/
-    bin/demo.py uninstall --name=jenkins-2 http://my.dcos.cluster/
+    python3 bin/demo.py uninstall --name=jenkins-1 http://my.dcos.cluster/
+    python3 bin/demo.py uninstall --name=jenkins-2 http://my.dcos.cluster/
     ```
 
 ### Authentication
