@@ -44,9 +44,10 @@ When run with the `uninstall` command, it will:
     git clone https://github.com/mesosphere/cd-demo.git
     ```
 
-2. Create a branch, this is mandatory:
+2. Create a branch from the latest stable tag, this is mandatory:
 
     ```
+    git checkout v1.8.3-2.7.2
     git checkout -b my-demo-branch
     git push origin my-demo-branch
     ```
