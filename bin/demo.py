@@ -312,7 +312,10 @@ def cleanup_dynamic_agents_jobs(jenkins_url, builds):
 
 def cleanup_deployed_app():
     log("removing demo app")
-    dcos.marathon.create_client().remove_app('jenkins-deployed-app', force=True)
+    try:
+        dcos.marathon.create_client().remove_app('jenkins-deployed-app', force=True)
+    except:
+        log("!! failed to remove demo app")
 
 def cleanup(jenkins_url, builds):
     cleanup_pipeline_jobs(jenkins_url)
@@ -321,8 +324,11 @@ def cleanup(jenkins_url, builds):
 
 def uninstall(jenkins_name):
     log("uninstalling Jenkins with name '{}'".format(jenkins_name))
-    uninstall_package_and_wait('jenkins', jenkins_name)
-    log("Jenkins has been uninstalled")
+    try:
+        uninstall_package_and_wait('jenkins', jenkins_name)
+        log("Jenkins has been uninstalled")
+    except:
+        log("!! failed to uninstall Jenkins")
 
 if __name__ == "__main__":
     arguments = docopt(__doc__, version="CD Demo 0.1")
