@@ -4,7 +4,7 @@
 Usage:
     demo.py install [options] <dcos_url>
     demo.py pipeline [options] <elb_url> <dcos_url>
-    demo.py dynamic-slaves [options] <dcos_url>
+    demo.py dynamic-agents [options] <dcos_url>
     demo.py cleanup [options] <dcos_url>
     demo.py uninstall [options] <dcos_url>
 
@@ -27,7 +27,7 @@ Pre-requisites:
 The continuous delivery demo will create a build pipeline that will deploy a
 Docker container to the DC/OS Marathon.
 
-The dynamic slaves demo will create 50 (by default) "freestyle" Jenkins jobs.
+The dynamic agents demo will create 50 (by default) "freestyle" Jenkins jobs.
 Each of these jobs will appear as a separate Jenkins build, and will randomly
 pass or fail. The duration of each job will be between 120 and 240 seconds.
 """
@@ -284,7 +284,7 @@ def demo_pipeline(jenkins_url, elb_url, name, branch, org, username, password):
     log("demo pipeline (workflow) created")
     log("once deployed, your application should be available at:\n\t{}".format(elb_url))
 
-def demo_dynamic_slaves(jenkins_url, builds):
+def demo_dynamic_agents(jenkins_url, builds):
     log("creating {} freestyle Jenkins jobs".format(builds))
     random.seed()
     with open("jobs/demo-job/config.xml") as demo_job:
@@ -304,7 +304,7 @@ def cleanup_pipeline_jobs(jenkins_url):
     delete_credentials(jenkins_url, "dcos-token")
     delete_job(jenkins_url, "pipeline-demo")
 
-def cleanup_dynamic_slaves_jobs(jenkins_url, builds):
+def cleanup_dynamic_agents_jobs(jenkins_url, builds):
     log("cleaning up {} builds".format(builds))
     for i in range(builds):
         job_name = "demo-job-{0:02d}".format(i)
@@ -316,7 +316,7 @@ def cleanup_deployed_app():
 def cleanup(jenkins_url, builds):
     cleanup_pipeline_jobs(jenkins_url)
     cleanup_deployed_app()
-    cleanup_dynamic_slaves_jobs(jenkins_url, builds)
+    cleanup_dynamic_agents_jobs(jenkins_url, builds)
 
 def uninstall(jenkins_name):
     log("uninstalling Jenkins with name '{}'".format(jenkins_name))
@@ -350,8 +350,8 @@ if __name__ == "__main__":
             install_marathon_lb(elb_url)
             update_and_push_marathon_json(elb_url, branch)
             demo_pipeline(jenkins_url, elb_url, jenkins_name, branch, org, username, password)
-        elif arguments['dynamic-slaves']:
-            demo_dynamic_slaves(jenkins_url, builds)
+        elif arguments['dynamic-agents']:
+            demo_dynamic_agents(jenkins_url, builds)
         elif arguments['cleanup']:
             cleanup(jenkins_url, builds)
         elif arguments['uninstall']:
