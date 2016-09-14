@@ -106,7 +106,7 @@ def authenticate_with_username():
 
 def check_and_set_token(dcos_url):
     if needs_authentication():
-        if '--dcos-oauth-token' in arguments:
+        if arguments['--dcos-oauth-token']:
             authenticate_with_oauth(dcos_url)
         else:
             authenticate_with_username()
