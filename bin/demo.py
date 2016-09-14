@@ -311,6 +311,7 @@ def cleanup_dynamic_agents_jobs(jenkins_url, builds):
         delete_job(jenkins_url, job_name)
 
 def cleanup_deployed_app():
+    log("removing demo app")
     dcos.marathon.create_client().remove_app('jenkins-deployed-app', force=True)
 
 def cleanup(jenkins_url, builds):
