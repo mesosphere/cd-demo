@@ -47,7 +47,7 @@ node {
             usernameVariable: 'DOCKER_HUB_USERNAME'
         ]]
     ) {
-        sh "docker login -u ${env.DOCKER_HUB_USERNAME} -p ${env.DOCKER_HUB_PASSWORD} -e demo@mesosphere.com"
+        sh "docker login -u '${env.DOCKER_HUB_USERNAME}' -p '${env.DOCKER_HUB_PASSWORD}' -e demo@mesosphere.com"
         sh "docker push mesosphere/cd-demo-app:${gitCommit()}"
     }
 
