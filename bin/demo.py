@@ -17,6 +17,7 @@ Options:
     --dcos-password <pass>      DC/OS auth password [default: deleteme]
     --dcos-oauth-token <token>  DC/OS OAuth token (required for OpenDC/OS)
     --builds <n>                Number of builds to create [default: 50]
+    --latest                    Use the latest version of the Jenkins package
 
 This script is used to demonstrate various features of Jenkins on the DC/OS.
 
@@ -338,6 +339,9 @@ if __name__ == "__main__":
     dcos_url = arguments['<dcos_url>']
     elb_url = arguments['<elb_url>'] #TODO: FIX ME
     jenkins_url = '{}service/{}/'.format(dcos_url, jenkins_name)
+
+    if arguments['--latest']:
+        jenkins_version = None
 
     config_dcos_cli(dcos_url)
     check_and_set_token(dcos_url)
