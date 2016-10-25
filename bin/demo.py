@@ -213,6 +213,28 @@ def trigger_build(jenkins_url, job_name, parameter_string = None):
     except:
         log("!! failed to trigger job '{}'".format(job_name))
 
+def build_status(jenkins_url, job_name):
+    url = "{}/job/{}/lastBuild/api/json".format(jenkins_url, job_name)
+    try:
+        r = http.request('get', url)
+        if r.status_code == 200:
+            json_data = r.json()
+        if 'result' not in json_data:
+            log_and_exit('!! build result not returned from job status')
+            return None
+        else:
+            return json_data['result']
+    except:
+        return None
+
+def build_log(jenkins_url, job_name):
+    url = "{}/job/{}/lastBuild/consoleText".format(jenkins_url, job_name)
+    try:
+        r = http.request('get', url)
+        return r.content
+    except:
+        return None
+
 def create_credentials(jenkins_url, credential_name, username, password):
     log("creating credentials '{}'".format(credential_name))
     credential = { 'credentials' : {
@@ -281,9 +303,24 @@ def demo_pipeline(jenkins_url, elb_url, name, branch, org, username, password):
         job_config = build_job.read().replace("GIT_BRANCH", branch)
         job_config = job_config.replace("DOCKER_HUB_ORG", org)
         create_job(jenkins_url, "pipeline-demo", job_config)
-    trigger_build(jenkins_url, "pipeline-demo")
     log("demo pipeline (workflow) created")
-    log("once deployed, your application should be available at:\n\t{}".format(elb_url))
+    trigger_build(jenkins_url, "pipeline-demo")
+    success = False
+    end_time = time.time() + 300
+    while time.time() < end_time:
+        status = build_status(jenkins_url, "pipeline-demo")
+        if status:
+            if status == "SUCCESS":
+                success = True
+                break
+            elif status == "FAILURE":
+                log("!! job failed, re-triggering...")
+                trigger_build(jenkins_url, "pipeline-demo")
+        time.sleep(10)
+    if success:
+        log("your application should be available at:\n\t{}".format(elb_url))
+    else:
+        log("!! something went wrong; build log follows:\n{}".format(build_log(jenkins_url, "pipeline-demo")))
 
 def demo_dynamic_agents(jenkins_url, builds):
     log("creating {} freestyle Jenkins jobs".format(builds))
