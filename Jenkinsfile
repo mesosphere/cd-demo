@@ -1,21 +1,21 @@
 def gitCommit() {
-    sh "git rev-parse HEAD > GIT_COMMIT"
-    def gitCommit = readFile('GIT_COMMIT').trim()
-    sh "rm -f GIT_COMMIT"
+    sh "git rev-parse HEAD > GIT_COMMIT-${env.BUILD_NUMBER}"
+    def gitCommit = readFile("GIT_COMMIT-${env.BUILD_NUMBER}").trim()
+    sh "rm -f GIT_COMMIT-${env.BUILD_NUMBER}"
     return gitCommit
 }
 
 def gitEmail() {
-    sh "git --no-pager show -s --format='%ae' ${gitCommit()} > GIT_EMAIL"
-    def gitEmail = readFile('GIT_EMAIL').trim()
-    sh "rm -f GIT_EMAIL"
+    sh "git --no-pager show -s --format='%ae' ${gitCommit()} > GIT_EMAIL-${env.BUILD_NUMBER}"
+    def gitEmail = readFile("GIT_EMAIL-${env.BUILD_NUMBER}").trim()
+    sh "rm -f GIT_EMAIL-${env.BUILD_NUMBER}"
     return gitEmail
 }
 
 def ipAddress() {
-    sh "docker inspect test-container-${env.BUILD_NUMBER} | jq -r '.[0].NetworkSettings.IPAddress' > IP_ADDRESS"
-    def ipAddress = readFile('IP_ADDRESS').trim()
-    sh "rm -f IP_ADDRESS"
+    sh "docker inspect test-container-${env.BUILD_NUMBER} | jq -r '.[0].NetworkSettings.IPAddress' > IP_ADDRESS-${env.BUILD_NUMBER}"
+    def ipAddress = readFile("IP_ADDRESS-${env.BUILD_NUMBER}").trim()
+    sh "rm -f IP_ADDRESS-${env.BUILD_NUMBER}"
     return ipAddress
 }
 
