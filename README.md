@@ -47,7 +47,7 @@ When run with the `uninstall` command, it will:
 2. Create a branch from the latest stable tag, this is mandatory:
 
     ```
-    git checkout v1.8.3-2.7.2
+    git checkout v1.8.6-2.7.2
     git checkout -b my-demo-branch
     git push origin my-demo-branch
     ```
