@@ -167,6 +167,9 @@ def install_marathon_lb_secret(marathon_lb_url):
         log("retrieving service account JSON")
         time.sleep(30)
         satoken = run_dcos_command("task log --lines=1 saread")[0]
+        # Strip out (new) timestamp from task log if DC/OS >= 1.9
+        if not dcos_version_less_than('1.9'):
+          satoken = satoken.split(' ', 2)[-1]
         run_dcos_command('marathon app remove saread')
     post_url = "{}secrets/v1/secret/default/marathon-lb".format(dcos_url)
     headers = {'Content-Type': 'application/json'}
