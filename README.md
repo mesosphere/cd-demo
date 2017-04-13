@@ -33,8 +33,11 @@ When run with the `uninstall` command, it will:
 
 ### Prerequisites
 
++ GitHub account
 + Python 3
 + `pip install -r requirements.txt`
+
+Tip: If Python 3 is not the default on your system, you may need to specifically instruct pip to install the Python 3 versions of the requirements.
 
 ### Set Up
 
@@ -54,7 +57,7 @@ When run with the `uninstall` command, it will:
 
 3. Ensure you have a DC/OS cluster available. 1 node will work but more than 1 node is preferable to demonstrate build parallelism.
 
-4. Export the demo Docker Hub password (NOT the DC/OS cluster password) to an environment variable (ideally put it in your ~/.bashrc). You will need to replace the password here with the password for the `cddemo` user with permission to push to `mesosphere/cd-demo-app` (or your own repo, if you override the `--org` and `--username` flags later):
+4. Export the demo Docker Hub password (NOT the DC/OS cluster password) to an environment variable. You will need to replace the password here with the password for the `cddemo` user with permission to push to `mesosphere/cd-demo-app` (or your own repo, if you override the `--org` and `--username` flags later):
 
     ```
     export PASSWORD=mypass123
