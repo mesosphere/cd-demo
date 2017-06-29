@@ -23,5 +23,6 @@
     "mem": 128,
     "upgradeStrategy": {
         "minimumHealthCapacity": 0
-    }
+    },
+    "cmd": "jekyll serve"
 }
