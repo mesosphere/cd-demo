@@ -33,7 +33,7 @@ node {
 
     // Test Docker image
     stage 'Test'
-    sh "docker run -d --name=test-container-${env.BUILD_NUMBER} mesosphere/cd-demo-app:${gitCommit()}"
+    sh "docker run -d --name=test-container-${env.BUILD_NUMBER} mesosphere/cd-demo-app:${gitCommit()} jekyll serve"
     sh "docker run mesosphere/linkchecker linkchecker --no-warnings http://${ipAddress()}:4000/"
 
 
