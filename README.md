@@ -47,17 +47,29 @@ Tip: If Python 3 is not the default on your system, you may need to specifically
     git clone https://github.com/mesosphere/cd-demo.git
     ```
 
-2. Create a branch from the latest stable tag, this is mandatory:
+2. Check out the latest stable tag, depending on DC/OS cluster version you're running against:
 
+    DC/OS 1.10+:
+    ```
+    git checkout v1.8.7-2.7.2
+    ```
+
+    DC/OS 1.9 and below:
     ```
     git checkout v1.8.6-2.7.2
+    ```
+
+
+3. Create a branch from the latest stable tag, this is mandatory:
+
+    ```
     git checkout -b my-demo-branch
     git push origin my-demo-branch
     ```
 
-3. Ensure you have a DC/OS cluster available. 1 node will work but more than 1 node is preferable to demonstrate build parallelism.
+4. Ensure you have a DC/OS cluster available. 1 node will work but more than 1 node is preferable to demonstrate build parallelism.
 
-4. Export the demo Docker Hub password (NOT the DC/OS cluster password) to an environment variable. You will need to replace the password here with the password for the `cddemo` user with permission to push to `mesosphere/cd-demo-app` (or your own repo, if you override the `--org` and `--username` flags later):
+5. Export the demo Docker Hub password (NOT the DC/OS cluster password) to an environment variable. You will need to replace the password here with the password for the `cddemo` user with permission to push to `mesosphere/cd-demo-app` (or your own repo, if you override the `--org` and `--username` flags later):
 
     ```
     export PASSWORD=mypass123
