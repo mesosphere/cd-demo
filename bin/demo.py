@@ -104,7 +104,6 @@ def authenticate_with_username():
         log_and_exit('!! DC/OS authentication failed; ' +
                 'invalid --dcos-username and --dcos-password provided')
 
-
 def check_and_set_token(dcos_url):
     if needs_authentication():
         if arguments['--dcos-oauth-token']:
@@ -116,8 +115,20 @@ def check_and_set_token(dcos_url):
                 'did you provide --dcos-username and --dcos-password or --dcos-oauth-token?')
 
 def config_dcos_cli(dcos_url):
-    dcos.config.set_val('core.dcos_url', dcos_url)
-    dcos.config.set_val('core.ssl_verify', 'False')
+    with dcos.cluster.setup_directory() as temp_path:
+        dcos.cluster.set_attached(temp_path)
+        dcos.config.set_val('core.dcos_url', dcos_url)
+        dcos.config.set_val('core.ssl_verify', 'False')
+
+        try:
+            shakedown.dcos_leader()
+        except:
+            check_and_set_token(dcos_url)
+
+        try:
+            dcos.cluster.setup_cluster_config(dcos_url, temp_path, False)
+        except:
+            log("cluster already configured")
 
 def install_jenkins(jenkins_name, jenkins_url):
     log("installing Jenkins with name '{}'".format(jenkins_name))
@@ -381,7 +392,6 @@ if __name__ == "__main__":
         jenkins_version = None
 
     config_dcos_cli(dcos_url)
-    check_and_set_token(dcos_url)
 
     try:
         if arguments['install']:
