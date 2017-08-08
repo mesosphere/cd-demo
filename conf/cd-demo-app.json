@@ -21,8 +21,5 @@
         "lastChangedBy": "velocity-team@mesosphere.io"
     },
     "mem": 128,
-    "upgradeStrategy": {
-        "minimumHealthCapacity": 0
-    },
     "cmd": "jekyll serve"
 }
