@@ -221,8 +221,10 @@ def trigger_build(jenkins_url, job_name, parameter_string = None):
         post_url = "{}/job/{}/build".format(jenkins_url, job_name)
     try:
         r = http.post(post_url)
-    except:
+    except Exception as e:
         log("!! failed to trigger job '{}'".format(job_name))
+        log("!! {}".format(e))
+
 
 def build_status(jenkins_url, job_name):
     url = "{}/job/{}/lastBuild/api/json".format(jenkins_url, job_name)
@@ -260,8 +262,9 @@ def create_credentials(jenkins_url, credential_name, username, password):
     post_url = "{}/credentials/store/system/domain/_/createCredentials".format(jenkins_url)
     try:
         r = http.post(post_url, data=data)
-    except:
+    except Exception as e:
         log("!! failed to create credentials '{}'".format(credential_name))
+        log("!! {}".format(e))
 
 def create_credentials_text(jenkins_url, credential_name, text):
     log("creating credentials '{}'".format(credential_name))
@@ -276,8 +279,9 @@ def create_credentials_text(jenkins_url, credential_name, text):
     post_url = "{}/credentials/store/system/domain/_/createCredentials".format(jenkins_url)
     try:
         r = http.post(post_url, data=data)
-    except:
+    except Exception as e:
         log("!! failed to create credentials '{}'".format(credential_name))
+        log("!! {}".format(e))
 
 
 def delete_credentials(jenkins_url, credential_name):
@@ -285,8 +289,9 @@ def delete_credentials(jenkins_url, credential_name):
     post_url = "{}/credentials/store/system/domain/_/credential/{}/doDelete".format(jenkins_url, credential_name)
     try:
         r = http.post(post_url)
-    except:
+    except Exception as e:
         log("!! failed to delete credentials '{}'".format(credential_name))
+        log("!! {}".format(e))
 
 def create_job(jenkins_url, job_name, job_config):
     log("creating job '{}'".format(job_name))
@@ -294,16 +299,18 @@ def create_job(jenkins_url, job_name, job_config):
     headers = {'Content-Type': 'application/xml'}
     try:
         r = http.post(post_url, headers=headers, data=job_config)
-    except:
+    except Exception as e:
         log("!! failed to create job '{}'".format(job_name))
+        log("!! {}".format(e))
 
 def delete_job(jenkins_url, job_name):
     log("deleting job {}".format(job_name))
     post_url = "{}/job/{}/doDelete".format(jenkins_url, job_name)
     try:
         r = http.post(post_url)
-    except:
+    except Exception as e:
         log("!! failed to delete job '{}'".format(job_name))
+        log("!! {}".format(e))
 
 def demo_pipeline(jenkins_url, elb_url, name, branch, org, username, password):
     log("creating demo pipeline (workflow)")
@@ -363,8 +370,9 @@ def cleanup_deployed_app():
     log("removing demo app")
     try:
         dcos.marathon.create_client().remove_app('jenkins-deployed-app', force=True)
-    except:
+    except Exception as e:
         log("!! failed to remove demo app")
+        log("!! {}".format(e))
 
 def cleanup(jenkins_url, builds):
     cleanup_pipeline_jobs(jenkins_url)
@@ -376,8 +384,9 @@ def uninstall(jenkins_name):
     try:
         uninstall_package_and_wait('jenkins', jenkins_name)
         log("Jenkins has been uninstalled")
-    except:
+    except Exception as e:
         log("!! failed to uninstall Jenkins")
+        log("!! {}".format(e))
 
 if __name__ == "__main__":
     arguments = docopt(__doc__, version="CD Demo 0.1")
