@@ -140,18 +140,26 @@ def install_jenkins(jenkins_name, jenkins_url):
     os.remove("jenkins_config.json")
     assert package_installed('jenkins', jenkins_name), log_and_exit('!! package failed to install')
     log("waiting for Jenkins service to come up at '{}'".format(jenkins_url))
-    end_time = time.time() + 60
+    end_time = time.time() + 300
+    success = False
     while time.time() < end_time:
         if verify_jenkins(jenkins_url):
+            success = True
             break
         time.sleep(1)
+    if success is not True:
+        log_and_exit('!! Jenkins failed to register as healthy')
+
 
 def verify_jenkins(jenkins_url):
     try:
-        r = http.get(jenkins_url)
-        if r.status_code == 200 and r.headers['x-jenkins']:
-            log("service is up and running, got Jenkins version '{}'".format(r.headers['x-jenkins']))
-            return True
+        r = http.get('{}/api/json'.format(jenkins_url))
+        data = r.json()
+        if data['mode'] == 'NORMAL':
+            r = http.get(jenkins_url)
+            if r.status_code == 200 and r.headers['x-jenkins']:
+                log("service is up and running, got Jenkins version '{}'".format(r.headers['x-jenkins']))
+                return True
     except:
         return False
 
