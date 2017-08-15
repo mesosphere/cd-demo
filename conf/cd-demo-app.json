@@ -1,25 +1,37 @@
 {
-    "container": {
-        "docker": {
-            "image": "mesosphere/cd-demo-app:latest",
-            "network": "BRIDGE",
-            "portMappings": [
-                {
-                    "containerPort": 4000,
-                    "protocol": "tcp"
-                }
-            ]
-        },
-        "type": "DOCKER"
+  "id": "/jenkins-deployed-app",
+  "cmd": "jekyll serve",
+  "container": {
+    "type": "DOCKER",
+    "docker": {
+      "image": "mesosphere/cd-demo-app:latest",
     },
-    "cpus": 0.1,
-    "id": "cd-demo-app",
-    "instances": 1,
-    "labels": {
-        "HAPROXY_0_VHOST": "ELB_HOSTNAME",
-        "HAPROXY_GROUP": "external",
-        "lastChangedBy": "velocity-team@mesosphere.io"
-    },
-    "mem": 128,
-    "cmd": "jekyll serve"
+    "portMappings": [
+      {
+        "containerPort": 4000,
+        "hostPort": 0,
+        "protocol": "tcp",
+        "servicePort": 10101,
+        "name": "jenkins-deployed-app"
+      }
+    ]
+  },
+  "cpus": 0.1,
+  "instances": 1,
+  "labels": {
+    "HAPROXY_0_VHOST": "ELB_HOSTNAME",
+    "HAPROXY_GROUP": "external",
+    "lastChangedBy": "velocity-team@mesosphere.com"
+  },
+  "mem": 128,
+  "networks": [
+    {
+      "mode": "container/bridge",
+      "labels": {}
+    }
+  ],
+  "upgradeStrategy": {
+    "maximumOverCapacity": 1,
+    "minimumHealthCapacity": 1
+  }
 }
