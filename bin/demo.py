@@ -44,7 +44,7 @@ from urllib.parse import urlparse
 
 from shakedown import *
 
-jenkins_version = "3.2.2-2.60.2"
+jenkins_version = "3.2.3-2.60.2"
 marathon_lb_version="1.10.0"
 
 def log(message):
