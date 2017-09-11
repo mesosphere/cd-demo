@@ -1,2 +1,2 @@
-dcos-shakedown==1.4.4
+dcos-shakedown==1.4.5
 docopt

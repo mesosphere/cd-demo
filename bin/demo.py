@@ -44,8 +44,8 @@ from urllib.parse import urlparse
 
 from shakedown import *
 
-jenkins_version = "2.0.0-2.7.2"
-marathon_lb_version="1.3.5"
+jenkins_version = "3.2.3-2.60.2"
+marathon_lb_version="1.10.0"
 
 def log(message):
     print("[demo]: {}".format(message))
@@ -104,7 +104,6 @@ def authenticate_with_username():
         log_and_exit('!! DC/OS authentication failed; ' +
                 'invalid --dcos-username and --dcos-password provided')
 
-
 def check_and_set_token(dcos_url):
     if needs_authentication():
         if arguments['--dcos-oauth-token']:
@@ -116,8 +115,20 @@ def check_and_set_token(dcos_url):
                 'did you provide --dcos-username and --dcos-password or --dcos-oauth-token?')
 
 def config_dcos_cli(dcos_url):
-    dcos.config.set_val('core.dcos_url', dcos_url)
-    dcos.config.set_val('core.ssl_verify', 'False')
+    with dcos.cluster.setup_directory() as temp_path:
+        dcos.cluster.set_attached(temp_path)
+        dcos.config.set_val('core.dcos_url', dcos_url)
+        dcos.config.set_val('core.ssl_verify', 'False')
+
+        try:
+            shakedown.dcos_leader()
+        except:
+            check_and_set_token(dcos_url)
+
+        try:
+            dcos.cluster.setup_cluster_config(dcos_url, temp_path, False)
+        except:
+            log("cluster already configured")
 
 def install_jenkins(jenkins_name, jenkins_url):
     log("installing Jenkins with name '{}'".format(jenkins_name))
@@ -129,18 +140,26 @@ def install_jenkins(jenkins_name, jenkins_url):
     os.remove("jenkins_config.json")
     assert package_installed('jenkins', jenkins_name), log_and_exit('!! package failed to install')
     log("waiting for Jenkins service to come up at '{}'".format(jenkins_url))
-    end_time = time.time() + 60
+    end_time = time.time() + 300
+    success = False
     while time.time() < end_time:
         if verify_jenkins(jenkins_url):
+            success = True
             break
         time.sleep(1)
+    if success is not True:
+        log_and_exit('!! Jenkins failed to register as healthy')
+
 
 def verify_jenkins(jenkins_url):
     try:
-        r = http.get(jenkins_url)
-        if r.status_code == 200 and r.headers['x-jenkins']:
-            log("service is up and running, got Jenkins version '{}'".format(r.headers['x-jenkins']))
-            return True
+        r = http.get('{}/api/json'.format(jenkins_url))
+        data = r.json()
+        if data['mode'] == 'NORMAL':
+            r = http.get(jenkins_url)
+            if r.status_code == 200 and r.headers['x-jenkins']:
+                log("service is up and running, got Jenkins version '{}'".format(r.headers['x-jenkins']))
+                return True
     except:
         return False
 
@@ -210,8 +229,10 @@ def trigger_build(jenkins_url, job_name, parameter_string = None):
         post_url = "{}/job/{}/build".format(jenkins_url, job_name)
     try:
         r = http.post(post_url)
-    except:
+    except Exception as e:
         log("!! failed to trigger job '{}'".format(job_name))
+        log("!! {}".format(e))
+
 
 def build_status(jenkins_url, job_name):
     url = "{}/job/{}/lastBuild/api/json".format(jenkins_url, job_name)
@@ -249,8 +270,9 @@ def create_credentials(jenkins_url, credential_name, username, password):
     post_url = "{}/credentials/store/system/domain/_/createCredentials".format(jenkins_url)
     try:
         r = http.post(post_url, data=data)
-    except:
+    except Exception as e:
         log("!! failed to create credentials '{}'".format(credential_name))
+        log("!! {}".format(e))
 
 def create_credentials_text(jenkins_url, credential_name, text):
     log("creating credentials '{}'".format(credential_name))
@@ -265,8 +287,9 @@ def create_credentials_text(jenkins_url, credential_name, text):
     post_url = "{}/credentials/store/system/domain/_/createCredentials".format(jenkins_url)
     try:
         r = http.post(post_url, data=data)
-    except:
+    except Exception as e:
         log("!! failed to create credentials '{}'".format(credential_name))
+        log("!! {}".format(e))
 
 
 def delete_credentials(jenkins_url, credential_name):
@@ -274,8 +297,9 @@ def delete_credentials(jenkins_url, credential_name):
     post_url = "{}/credentials/store/system/domain/_/credential/{}/doDelete".format(jenkins_url, credential_name)
     try:
         r = http.post(post_url)
-    except:
+    except Exception as e:
         log("!! failed to delete credentials '{}'".format(credential_name))
+        log("!! {}".format(e))
 
 def create_job(jenkins_url, job_name, job_config):
     log("creating job '{}'".format(job_name))
@@ -283,16 +307,18 @@ def create_job(jenkins_url, job_name, job_config):
     headers = {'Content-Type': 'application/xml'}
     try:
         r = http.post(post_url, headers=headers, data=job_config)
-    except:
+    except Exception as e:
         log("!! failed to create job '{}'".format(job_name))
+        log("!! {}".format(e))
 
 def delete_job(jenkins_url, job_name):
     log("deleting job {}".format(job_name))
     post_url = "{}/job/{}/doDelete".format(jenkins_url, job_name)
     try:
         r = http.post(post_url)
-    except:
+    except Exception as e:
         log("!! failed to delete job '{}'".format(job_name))
+        log("!! {}".format(e))
 
 def demo_pipeline(jenkins_url, elb_url, name, branch, org, username, password):
     log("creating demo pipeline (workflow)")
@@ -352,8 +378,9 @@ def cleanup_deployed_app():
     log("removing demo app")
     try:
         dcos.marathon.create_client().remove_app('jenkins-deployed-app', force=True)
-    except:
+    except Exception as e:
         log("!! failed to remove demo app")
+        log("!! {}".format(e))
 
 def cleanup(jenkins_url, builds):
     cleanup_pipeline_jobs(jenkins_url)
@@ -365,8 +392,9 @@ def uninstall(jenkins_name):
     try:
         uninstall_package_and_wait('jenkins', jenkins_name)
         log("Jenkins has been uninstalled")
-    except:
+    except Exception as e:
         log("!! failed to uninstall Jenkins")
+        log("!! {}".format(e))
 
 if __name__ == "__main__":
     arguments = docopt(__doc__, version="CD Demo 0.1")
@@ -381,7 +409,6 @@ if __name__ == "__main__":
         jenkins_version = None
 
     config_dcos_cli(dcos_url)
-    check_and_set_token(dcos_url)
 
     try:
         if arguments['install']:
