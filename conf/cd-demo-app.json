@@ -19,7 +19,8 @@
   "instances": 1,
   "labels": {
     "HAPROXY_0_VHOST": "ELB_HOSTNAME",
-    "HAPROXY_GROUP": "external"
+    "HAPROXY_GROUP": "external",
+    "lastChangedBy": "velocity-team@mesosphere.com"
   },
   "mem": 128,
   "networks": [
