@@ -35,7 +35,7 @@ When run with the `uninstall` command, it will:
 
 + GitHub account
 + Python 3
-+ `pip install -r requirements.txt`
++ `pip3 install -r requirements.txt`
 
 Tip: If Python 3 is not the default on your system, you may need to specifically instruct pip to install the Python 3 versions of the requirements.
 
