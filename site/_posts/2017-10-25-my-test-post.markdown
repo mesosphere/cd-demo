@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Welcome to Let's Do this Dudes""
+title:  "Welcome to Let's Do this Dudes"
 categories: demo
 ---
 
