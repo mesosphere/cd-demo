@@ -13,14 +13,15 @@ def gitEmail() {
 }
 
 def ipAddress() {
-    sh "docker inspect test-container | jq -r '.[0].NetworkSettings.IPAddress' > IP_ADDRESS"
-    def ipAddress = readFile("IP_ADDRESS").trim()
-    sh "rm -f IP_ADDRESS"
+    sh "docker inspect test-container-${env.BUILD_NUMBER} | jq -r '.[0].NetworkSettings.IPAddress' > IP_ADDRESS-${env.BUILD_NUMBER}"
+    sh "docker inspect test-container-${env.BUILD_NUMBER} | jq -r '.[0].NetworkSettings'"
+    def ipAddress = readFile("IP_ADDRESS-${env.BUILD_NUMBER}").trim()
+    sh "rm -f IP_ADDRESS-${env.BUILD_NUMBER}"
     return ipAddress
 }
 
-
-node {
+try {
+ node {
     // Checkout source code from Git
     stage 'Checkout'
     checkout scm
@@ -33,7 +34,7 @@ node {
 
     // Test Docker image
     stage 'Test'
-    sh "docker run -d --name=test-container mesosphere/cd-demo-app:${gitCommit()} jekyll serve"
+    sh "docker run -d --name=test-container-${env.BUILD_NUMBER} mesosphere/cd-demo-app:${gitCommit()} jekyll serve"    
     sh "docker run mesosphere/linkchecker linkchecker --no-warnings http://${ipAddress()}:4000/"
 
 
@@ -64,11 +65,27 @@ node {
         docker: "mesosphere/cd-demo-app:${gitCommit()}".toString(),
         labels: [[name: 'lastChangedBy', value: "${gitEmail()}".toString()]]
     )
+ }
+} catch (Exception e) {
+    println 'Build Failed'
+    currentBuild.result = 'FAILURE'
+    stage 'Publish'
+    println 'Skipped'
+    stage 'Deploy'
+    println 'Skipped'
+}
 
 
+
+try {
+ node {
     // Clean up
     stage 'Clean'
-    sh "docker kill \$(docker ps -q)"
-    sh "docker rm \$(docker ps -a -q)"
-    sh "docker rmi \$(docker images -q)"
-}
+    sh "docker ps"
+    sh "docker kill test-container-${env.BUILD_NUMBER}"
+    sh "docker rm test-container-${env.BUILD_NUMBER}"
+ }
+} catch (Exception e) {
+    println 'Cleanup failed'
+    currentBuild.result = 'FAILURE'
+} 
