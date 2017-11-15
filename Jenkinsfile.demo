@@ -13,9 +13,9 @@ def gitEmail() {
 }
 
 def ipAddress() {
-    sh "docker inspect test-container-${env.BUILD_NUMBER} | jq -r '.[0].NetworkSettings.IPAddress' > IP_ADDRESS-${env.BUILD_NUMBER}"
-    def ipAddress = readFile("IP_ADDRESS-${env.BUILD_NUMBER}").trim()
-    sh "rm -f IP_ADDRESS-${env.BUILD_NUMBER}"
+    sh "docker inspect test-container | jq -r '.[0].NetworkSettings.IPAddress' > IP_ADDRESS"
+    def ipAddress = readFile("IP_ADDRESS").trim()
+    sh "rm -f IP_ADDRESS"
     return ipAddress
 }
 
@@ -33,7 +33,7 @@ node {
 
     // Test Docker image
     stage 'Test'
-    sh "docker run -d --name=test-container-${env.BUILD_NUMBER} mesosphere/cd-demo-app:${gitCommit()} jekyll serve"
+    sh "docker run -d --name=test-container mesosphere/cd-demo-app:${gitCommit()} jekyll serve"
     sh "docker run mesosphere/linkchecker linkchecker --no-warnings http://${ipAddress()}:4000/"
 
 
@@ -70,4 +70,5 @@ node {
     stage 'Clean'
     sh "docker kill \$(docker ps -q)"
     sh "docker rm \$(docker ps -a -q)"
+    sh "docker rmi \$(docker images -q)"
 }
