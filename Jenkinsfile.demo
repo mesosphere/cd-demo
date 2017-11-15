@@ -68,6 +68,6 @@ node {
 
     // Clean up
     stage 'Clean'
-    sh "docker kill $(docker ps -q)"
-    sh "docker rm $(docker ps -a -q)"
+    sh "docker kill \$(docker ps -q)"
+    sh "docker rm \$(docker ps -a -q)"
 }
