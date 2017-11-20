@@ -18,7 +18,7 @@
   "cpus": 0.1,
   "instances": 1,
   "labels": {
-    "HAPROXY_0_VHOST": "rlachhman-publicsl-1w0thlrytydej-1494819849.us-west-2.elb.amazonaws.com",
+    "HAPROXY_0_VHOST": "rlachhman-publicsl-5hvqjpx92c21-1940174032.us-west-2.elb.amazonaws.com",
     "HAPROXY_GROUP": "external",
     "lastChangedBy": "velocity-team@mesosphere.com"
   },
