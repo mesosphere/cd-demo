@@ -1,8 +1,0 @@
-{
-  "id": "/saread",
-  "cmd": "cat /run/dcos/etc/mesos/agent_service_account.json\nsleep 36000",
-  "instances": 1,
-  "cpus": 0.1,
-  "mem": 32,
-  "user": "root"
-}
