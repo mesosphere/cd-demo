@@ -178,7 +178,7 @@ def install_marathon_lb(marathon_lb_url):
 def install_marathon_lb_secret():
     log('installing dcos-enterprise-cli')
     install_package('dcos-enterprise-cli')
-    log('installing marathon-lb service account and secret')
+    log('installing marathon-lb service account and secret') # https://docs.mesosphere.com/1.10/networking/marathon-lb/mlb-auth/
     with stdchannel_redirected(sys.stdout, os.devnull):
         run_dcos_command('security org service-accounts keypair mlb-private-key.pem mlb-public-key.pem')
         run_dcos_command('security org service-accounts create -p mlb-public-key.pem mlb-principal')
