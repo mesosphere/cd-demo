@@ -168,36 +168,24 @@ def install_marathon_lb(marathon_lb_url):
         log("installing marathon-lb")
         try:
             authenticate_with_username() # test to see if we're on Enterprise DC/OS
-            install_marathon_lb_secret(marathon_lb_url)
+            install_marathon_lb_secret()
             install_package('marathon-lb', marathon_lb_version, None, "conf/marathon-lb.json")
         except:
             install_package('marathon-lb', marathon_lb_version)
     else:
         log("marathon-lb is already installed")
 
-def install_marathon_lb_secret(marathon_lb_url):
+def install_marathon_lb_secret():
+    log('installing dcos-enterprise-cli')
+    install_package('dcos-enterprise-cli')
+    log('installing marathon-lb service account and secret') # https://docs.mesosphere.com/1.10/networking/marathon-lb/mlb-auth/
     with stdchannel_redirected(sys.stdout, os.devnull):
-        run_dcos_command('marathon app add conf/get_sa.json')
-        end_time = time.time() + 300
-        while time.time() < end_time:
-            if get_marathon_task('saread'):
-                break
-            time.sleep(1)
-        log("retrieving service account JSON")
-        time.sleep(30)
-        satoken = run_dcos_command("task log --lines=1 saread")[0]
-        run_dcos_command('marathon app remove saread')
-    post_url = "{}secrets/v1/secret/default/marathon-lb".format(dcos_url)
-    headers = {'Content-Type': 'application/json'}
-    data = json.dumps({ 'value' : satoken })
-    try:
-        r = http.get(post_url)
-        if r.status_code == 200:
-            log("removing old marathon-lb secret key")
-            http.delete(post_url)
-    except:
-        pass
-    r = http.put(post_url, headers=headers, data=data)
+        run_dcos_command('security org service-accounts keypair mlb-private-key.pem mlb-public-key.pem')
+        run_dcos_command('security org service-accounts create -p mlb-public-key.pem mlb-principal')
+        run_dcos_command('security secrets create-sa-secret --strict mlb-private-key.pem mlb-principal marathon-lb/mlb-secret')
+        run_dcos_command('security org users grant mlb-principal dcos:service:marathon:marathon:services:/ read')
+        run_dcos_command('security org users grant mlb-principal dcos:service:marathon:marathon:admin:events read')
+    os.remove('mlb-private-key.pem')
 
 def strip_to_hostname(url):
     parsed_url = urlparse(url)

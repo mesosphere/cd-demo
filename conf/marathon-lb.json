@@ -1,5 +1,6 @@
 {
-  "marathon-lb": {
-    "secret_name": "marathon-lb"
-  }
+    "marathon-lb": {
+        "secret_name": "marathon-lb/mlb-secret",
+        "marathon-uri": "https://marathon.mesos:8443"
+    }
 }
