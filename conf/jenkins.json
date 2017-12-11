@@ -1,5 +1,8 @@
 {
   "service": {
     "name": "JENKINS_NAME"
+  },
+  "advanced": {
+    "jvm-opts": "-Xms1024m -Xmx1024m -Dhudson.slaves.NodeProvisioner.MARGIN=50 -Dhudson.slaves.NodeProvisioner.MARGIN0=0.85"
   }
 }

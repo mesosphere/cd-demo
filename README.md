@@ -189,6 +189,30 @@ The script will check to see if your current machine has a valid `dcos_acs_token
 
 2. if this fails, it will attempt to use the `--dcos-oauth-token` arguments to authenticate against an Open DC/OS cluster.
 
+## Orchestration Script for Demos
+
+If you would prefer to have an all-in-one demo experience, we now have a stage_cd_demo.sh script that will follow the default demo flow.
+
+To run, the syntax is:
+
+```
+bash ./stage_cd_demo.sh <url-to-master> <url-of-public-elb>
+```
+
+This script will prompt you to walk through the demo, in the following order:
+
+- Stage your local environment (install python dependencies, configure dcos cli, prompt you for the cd-demo docker password, install jenkins)
+- Kick off the pipeline demo (install and configure marathon-lb, kick off initial pipeline demo build)
+- Create a new post, commit to your branch, and trigger a pipeline rebuild by pushing the change to githhub
+- Kick off dynamic load demonstration (launch 50 nodes in parallel, including a jenkins config change to speed up the time to launch new build executors)
+- Clean up your github branch and cluster after the fact so you're ready for another runthrough
+
+At each stage above, the script will pause and you will need to press ENTER to continue.
+
+If you would prefer not to get prompted for the demo docker password, you can create a ```password.txt``` file in the repo root directory (e.g. ~/repos/cd-demo/password.txt) with the password, which will override the manual prompt.
+
+The password file will NOT be committed to your branch.
+
 ## TODO
 
 + This script is currently untested on Windows.
