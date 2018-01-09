@@ -19,7 +19,7 @@
   "cpus": 0.1,
   "instances": 1,
   "labels": {
-    "HAPROXY_0_VHOST": "52.26.94.227",
+    "HAPROXY_0_VHOST": "rgonzalez-publicsl-gsoidxvow7rv-1195551613.us-west-2.elb.amazonaws.com",
     "HAPROXY_GROUP": "external",
     "lastChangedBy": "velocity-team@mesosphere.com"
   },
