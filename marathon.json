@@ -1,0 +1,36 @@
+{
+  "id": "/jenkins-deployed-app",
+  "cmd": "jekyll serve",
+  "container": {
+    "type": "DOCKER",
+    "docker": {
+      "image": "mesosphere/cd-demo-app:latest"
+    },
+    "portMappings": [
+      {
+        "containerPort": 4000,
+        "hostPort": 0,
+        "protocol": "tcp",
+        "name": "jenkins-deployed-app"
+      }
+    ]
+  },
+  "cpus": 0.1,
+  "instances": 1,
+  "labels": {
+    "HAPROXY_0_VHOST": "35.160.230.132",
+    "HAPROXY_GROUP": "external",
+    "lastChangedBy": "velocity-team@mesosphere.com"
+  },
+  "mem": 128,
+  "networks": [
+    {
+      "mode": "container/bridge",
+      "labels": {}
+    }
+  ],
+  "upgradeStrategy": {
+    "maximumOverCapacity": 1,
+    "minimumHealthCapacity": 1
+  }
+}
