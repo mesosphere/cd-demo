@@ -1,0 +1,28 @@
+{
+    "container": {
+        "docker": {
+            "image": "mesosphere/cd-demo-app:latest",
+            "network": "BRIDGE",
+            "portMappings": [
+                {
+                    "containerPort": 4000,
+                    "protocol": "tcp"
+                }
+            ]
+        },
+        "type": "DOCKER"
+    },
+    "cpus": 0.1,
+    "id": "cd-demo-app",
+    "instances": 1,
+    "labels": {
+        "HAPROXY_0_VHOST": "janrepnak-publicsl-1lthuxn00tyi9-844594251.us-west-2.elb.amazonaws.com",
+        "HAPROXY_GROUP": "external",
+        "lastChangedBy": "velocity-team@mesosphere.io"
+    },
+    "mem": 128,
+    "upgradeStrategy": {
+        "minimumHealthCapacity": 0
+    },
+    "cmd": "jekyll serve"
+}
