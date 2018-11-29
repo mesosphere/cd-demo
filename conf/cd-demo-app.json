@@ -4,7 +4,7 @@
   "container": {
     "type": "DOCKER",
     "docker": {
-      "image": "mesosphere/cd-demo-app:latest"
+      "image": "kotihanu/cd-demo-app:latest"
     },
     "portMappings": [
       {
@@ -18,7 +18,7 @@
   "cpus": 0.1,
   "instances": 1,
   "labels": {
-    "HAPROXY_0_VHOST": "ELB_HOSTNAME",
+    "HAPROXY_0_VHOST": "34.205.85.0",
     "HAPROXY_GROUP": "external",
     "lastChangedBy": "velocity-team@mesosphere.com"
   },
